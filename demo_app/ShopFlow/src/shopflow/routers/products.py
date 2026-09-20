@@ -1,5 +1,6 @@
 from fastapi import APIRouter,Depends, HTTPException
 from shopflow.database import get_db
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from shopflow.schemas.product import Product, ProductResponse, ProductUpdate
 from shopflow.models.product import Product as ProductModel
@@ -11,7 +12,7 @@ logger = logger_module.get_logger(logger_name="shopflow.products")
 @router.get('/products', response_model=list[ProductResponse])
 def get_products(db :Session = Depends(get_db)):
     logger.info("Fetching all products")
-    products = db.query(ProductModel).all()
+    products = db.scalars(select(ProductModel)).all()
     logger.info("Products fetched", extra={"count": len(products)})
     return products
 
@@ -33,7 +34,8 @@ def add_product(data:Product,db :Session = Depends(get_db)):
 @router.delete('/products')
 def delete_product(id:str,db :Session = Depends(get_db)):
     logger.info("Deleting product", extra={"id": id})
-    product = db.query(ProductModel).filter(ProductModel.id == id).first()
+    stmt = select(ProductModel).where(ProductModel.id == id)
+    product = db.scalar(stmt)
     if not product:
         logger.warning("Product not found for delete", extra={"id": id})
         raise HTTPException(status_code=404, detail="Product not found")
@@ -48,7 +50,8 @@ def delete_product(id:str,db :Session = Depends(get_db)):
 @router.patch('/products')
 def update_product(id:str, data:ProductUpdate, db :Session = Depends(get_db)):
     logger.info("Updating product", extra={"id": id})
-    product = db.query(ProductModel).filter(ProductModel.id == id).first()
+    stmt = select(ProductModel).where(ProductModel.id == id)
+    product = db.scalar(stmt)
     if not product:
         logger.warning("Product not found for update", extra={"id": id})
         raise HTTPException(status_code=404, detail="Product not found")
