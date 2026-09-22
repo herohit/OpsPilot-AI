@@ -1,3 +1,5 @@
+import os
+
 from ops_pilot.models.auth_model import UserModel
 from ops_pilot.schemas.auth_schema import UserResponse
 from typing import Annotated
@@ -15,13 +17,16 @@ from ops_pilot.database import get_db,Base,engine
 from sqlalchemy.orm import Session
 
 from ops_pilot.models.auth_model import UserModel
-from ops_pilot.schemas.auth_schema import Token,TokenData
+from ops_pilot.schemas.auth_schema import Token,TokenData,UserCreate
+
+from dotenv import load_dotenv
+load_dotenv()
 
 # to get a string like this run:
 # openssl rand -hex 32
-SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")) # pyright: ignore[reportArgumentType]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -35,7 +40,7 @@ password_hash = PasswordHash.recommended()
 
 DUMMY_HASH = password_hash.hash("dummy_password")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 app = FastAPI(lifespan=lifespan)
 
@@ -77,7 +82,7 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session 
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) # pyright: ignore[reportArgumentType]
         username = payload.get("sub")
         if username is None:
             raise credentials_exception
@@ -90,7 +95,7 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session 
     return user
 
 
-@app.post('/token')
+@app.post('/login')
 async def login_for_access_token(form_data :Annotated[OAuth2PasswordRequestForm, Depends()],db:Session = Depends(get_db)):
     username = form_data.username
     password = form_data.password
@@ -109,4 +114,20 @@ async def login_for_access_token(form_data :Annotated[OAuth2PasswordRequestForm,
 @app.get("/users/me", response_model=UserResponse)
 async def read_users_me(current_user: UserModel = Depends(get_current_user)):
     return current_user
+
+@app.post("/register",response_model=UserResponse)
+def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    # Check if the user already exists in the database or not
+    existing_user = get_user_by_email(db, user.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exists",
+        )
+    hashed_password = password_hash.hash(user.password)
+    db_user = UserModel(email=user.email, hashed_password=hashed_password, first_name=user.first_name, last_name=user.last_name)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
     

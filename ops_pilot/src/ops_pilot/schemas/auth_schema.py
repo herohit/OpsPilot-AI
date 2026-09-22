@@ -3,11 +3,9 @@ from uuid import UUID
 
 class UserCreate(BaseModel):
     email: EmailStr
-    hashed_password: str
+    password: str
     first_name: str
     last_name: str
-    is_active: bool = True
-    is_verified: bool = False
 
 class UserResponse(BaseModel):
     id: UUID
