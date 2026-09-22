@@ -1,0 +1,31 @@
+from pydantic import BaseModel, ConfigDict, EmailStr
+from uuid import UUID
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    hashed_password: str
+    first_name: str
+    last_name: str
+    is_active: bool = True
+    is_verified: bool = False
+
+class UserResponse(BaseModel):
+    id: UUID
+    email: EmailStr
+    first_name: str
+    last_name: str
+    is_active: bool
+    is_verified: bool
+    
+    model_config = ConfigDict(from_attributes=True)
+    
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class TokenData(BaseModel):
+    username: str
+
+    model_config = ConfigDict(from_attributes=True)
