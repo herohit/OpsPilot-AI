@@ -6,6 +6,7 @@ class UserCreate(BaseModel):
     password: str
     first_name: str
     last_name: str
+    model_config = ConfigDict(from_attributes=True)
 
 class UserResponse(BaseModel):
     id: UUID
@@ -19,11 +20,17 @@ class UserResponse(BaseModel):
     
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
 
     model_config = ConfigDict(from_attributes=True)
 
 class TokenData(BaseModel):
     username: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
     model_config = ConfigDict(from_attributes=True)

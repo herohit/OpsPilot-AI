@@ -3,6 +3,7 @@ import os
 from ops_pilot.models.auth_model import UserModel
 from ops_pilot.schemas.auth_schema import UserResponse
 from typing import Annotated
+import secrets
 
 from fastapi import Depends, FastAPI, HTTPException,status
 from contextlib import asynccontextmanager
@@ -12,14 +13,15 @@ from pwdlib import PasswordHash
 import jwt 
 from sqlalchemy import select
 from datetime import timedelta,datetime,timezone
-
+from uuid import UUID
 from ops_pilot.database import get_db,Base,engine
 from sqlalchemy.orm import Session
 
-from ops_pilot.models.auth_model import UserModel
-from ops_pilot.schemas.auth_schema import Token,TokenData,UserCreate
+from ops_pilot.models.auth_model import UserModel,RefreshTokenModel
+from ops_pilot.schemas.auth_schema import Token,TokenData,UserCreate,RefreshTokenRequest
 
 from dotenv import load_dotenv
+from datetime import datetime, timedelta, timezone
 load_dotenv()
 
 # to get a string like this run:
@@ -27,6 +29,7 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")) # pyright: ignore[reportArgumentType]
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS")) # pyright: ignore[reportArgumentType]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,6 +44,7 @@ password_hash = PasswordHash.recommended()
 DUMMY_HASH = password_hash.hash("dummy_password")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -70,6 +74,26 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def create_refresh_token(db: Session, user: UserModel) -> str:
+    secret = secrets.token_urlsafe(64)
+
+    token_hash = password_hash.hash(secret)
+
+    refresh_token_db = RefreshTokenModel(
+        token_hash=token_hash,
+        user_id=user.id,
+        expires_at=datetime.now(timezone.utc)
+        + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+    )
+
+    db.add(refresh_token_db)
+    db.commit()
+    db.refresh(refresh_token_db)
+
+    # UUID identifies the database row
+    return f"{refresh_token_db.id}.{secret}"
 
 def get_user_by_email(db: Session, email: str):
     stmt = select(UserModel).where(UserModel.email == email)
@@ -109,7 +133,9 @@ async def login_for_access_token(form_data :Annotated[OAuth2PasswordRequestForm,
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
-    return Token(access_token=access_token, token_type="bearer")
+    # Refresh token
+    refresh_token = create_refresh_token(db,user)
+    return Token(access_token=access_token, token_type="bearer", refresh_token=refresh_token)
 
 @app.get("/users/me", response_model=UserResponse)
 async def read_users_me(current_user: UserModel = Depends(get_current_user)):
@@ -131,3 +157,108 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     return db_user
     
+@app.post("/auth/refresh", response_model=Token)
+def refresh_access_token(
+    request: RefreshTokenRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        token_id, secret = request.refresh_token.split(".", 1)
+        token_id = UUID(token_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    stored_token = db.get(
+        RefreshTokenModel,
+        token_id
+    )
+    
+    if stored_token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token"
+        )
+        
+    if stored_token.revoked:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has been revoked",
+        )
+        
+     # Check expiration
+    if stored_token.expires_at <= datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token expired"
+        )
+    if not password_hash.verify(
+        secret,
+        stored_token.token_hash
+        ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+        
+    user = db.get(
+        UserModel,
+        stored_token.user_id
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+    # Revoke old refresh token
+    stored_token.revoked = True
+    # Create new access token
+    access_token = create_access_token(
+        data={"sub": user.email},
+        expires_delta=timedelta(
+            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+    )
+
+    # Create new refresh token
+    new_refresh_token = create_refresh_token(
+        db,
+        user
+    )
+
+    db.commit()
+
+    return Token(
+        access_token=access_token,
+        refresh_token=new_refresh_token,
+        token_type="bearer",
+    )
+
+
+@app.post("/auth/logout")
+def logout(
+    request: RefreshTokenRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        token_id, _ = request.refresh_token.split(".", 1)
+        token_id = UUID(token_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    stored_token = db.get(
+        RefreshTokenModel,
+        token_id
+    )
+
+    if stored_token:
+        stored_token.revoked = True
+        db.commit()
+
+    return {"message": "Successfully logged out"}
