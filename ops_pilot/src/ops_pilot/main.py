@@ -24,12 +24,20 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 load_dotenv()
 
+
+def get_required_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+
 # to get a string like this run:
 # openssl rand -hex 32
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")) # pyright: ignore[reportArgumentType]
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS")) # pyright: ignore[reportArgumentType]
+SECRET_KEY = get_required_env("SECRET_KEY")
+ALGORITHM = get_required_env("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(get_required_env("ACCESS_TOKEN_EXPIRE_MINUTES"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(get_required_env("REFRESH_TOKEN_EXPIRE_DAYS"))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,6 +55,17 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+def utc_now_naive() -> datetime:
+    # Store and compare DB datetimes as naive UTC for sqlite compatibility.
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def to_utc_naive(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -84,7 +103,7 @@ def create_refresh_token(db: Session, user: UserModel) -> str:
     refresh_token_db = RefreshTokenModel(
         token_hash=token_hash,
         user_id=user.id,
-        expires_at=datetime.now(timezone.utc)
+        expires_at=utc_now_naive()
         + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
     )
 
@@ -106,9 +125,9 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session 
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) # pyright: ignore[reportArgumentType]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
-        if username is None:
+        if not isinstance(username, str) or not username:
             raise credentials_exception
         token_data = TokenData(username=username)
     except InvalidTokenError:
@@ -189,7 +208,7 @@ def refresh_access_token(
         )
         
      # Check expiration
-    if stored_token.expires_at <= datetime.now(timezone.utc):
+    if to_utc_naive(stored_token.expires_at) <= utc_now_naive():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token expired"
