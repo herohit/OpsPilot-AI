@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, EmailStr
 from uuid import UUID
 
-class UserCreate(BaseModel):
+class UserCreateRequest(BaseModel):
     email: EmailStr
     password: str
     first_name: str
@@ -18,14 +18,14 @@ class UserResponse(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
     
-class Token(BaseModel):
+class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str
 
     model_config = ConfigDict(from_attributes=True)
 
-class TokenData(BaseModel):
+class TokenPayload(BaseModel):
     username: str
 
     model_config = ConfigDict(from_attributes=True)

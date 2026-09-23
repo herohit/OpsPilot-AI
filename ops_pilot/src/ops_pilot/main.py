@@ -18,7 +18,12 @@ from ops_pilot.database import get_db,Base,engine
 from sqlalchemy.orm import Session
 
 from ops_pilot.models.auth_model import UserModel,RefreshTokenModel
-from ops_pilot.schemas.auth_schema import Token,TokenData,UserCreate,RefreshTokenRequest
+from ops_pilot.schemas.auth_schema import (
+    RefreshTokenRequest,
+    TokenPayload,
+    TokenResponse,
+    UserCreateRequest,
+)
 
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
@@ -129,7 +134,7 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session 
         username = payload.get("sub")
         if not isinstance(username, str) or not username:
             raise credentials_exception
-        token_data = TokenData(username=username)
+        token_data = TokenPayload(username=username)
     except InvalidTokenError:
         raise credentials_exception
     user = get_user_by_email(db, token_data.username)
@@ -154,14 +159,14 @@ async def login_for_access_token(form_data :Annotated[OAuth2PasswordRequestForm,
     access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
     # Refresh token
     refresh_token = create_refresh_token(db,user)
-    return Token(access_token=access_token, token_type="bearer", refresh_token=refresh_token)
+    return TokenResponse(access_token=access_token, token_type="bearer", refresh_token=refresh_token)
 
 @app.get("/users/me", response_model=UserResponse)
 async def read_users_me(current_user: UserModel = Depends(get_current_user)):
     return current_user
 
 @app.post("/register",response_model=UserResponse)
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
+def register_user(user: UserCreateRequest, db: Session = Depends(get_db)):
     # Check if the user already exists in the database or not
     existing_user = get_user_by_email(db, user.email)
     if existing_user:
@@ -176,7 +181,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     return db_user
     
-@app.post("/auth/refresh", response_model=Token)
+@app.post("/auth/refresh", response_model=TokenResponse)
 def refresh_access_token(
     request: RefreshTokenRequest,
     db: Session = Depends(get_db)
@@ -250,7 +255,7 @@ def refresh_access_token(
 
     db.commit()
 
-    return Token(
+    return TokenResponse(
         access_token=access_token,
         refresh_token=new_refresh_token,
         token_type="bearer",
