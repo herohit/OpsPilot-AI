@@ -25,6 +25,11 @@ class DeploymentStatus(str, Enum):
 
 class Deployment(Base):
     __tablename__ = "deployments"
+    __table_args__ = (
+        UniqueConstraint(
+            "environment_id", "version", "commit_sha", name="uq_deployment_environment_version_commit"
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     environment_id: Mapped[UUID] = mapped_column(ForeignKey("environments.id"),nullable=False)

@@ -4,10 +4,9 @@ from fastapi import HTTPException
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from ops_pilot.models.deployment_model import Deployment
 from ops_pilot.schemas.deployment_schema import DeploymentUpdateRequest
-from ops_pilot.services.project_service import get_project
-from ops_pilot.services.service_service import get_service
 from ops_pilot.services.environment_service import get_environment
 
 
@@ -47,6 +46,14 @@ def create_deployment(db: Session, project_id: UUID, service_id: UUID, environme
     environment_id=environment_id
 )
     db.add(deployment)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if db.scalar(stmt):
+            raise HTTPException(
+                status_code=409, detail="Deployment with this version and commit SHA already exists"
+            )
+        raise
     db.refresh(deployment)
     return deployment
