@@ -1,25 +1,29 @@
 from datetime import datetime
 from uuid import UUID
+from pydantic import BaseModel
+
+
 
 from pydantic import BaseModel, ConfigDict
 
-class ProjectCreateRequest(BaseModel):
+
+class ServiceCreateRequest(BaseModel):
     name: str
     description: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
-
-class ProjectUpdateRequest(BaseModel):
+    
+class ServiceUpdateRequest(BaseModel):
     name: str | None = None
     description: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
-class ProjectResponse(BaseModel):
+class ServiceResponse(BaseModel):
     id: UUID
     name: str
     description: str | None
-    owner_id: UUID
+    project_id: UUID
     created_at: datetime
     updated_at: datetime
 
