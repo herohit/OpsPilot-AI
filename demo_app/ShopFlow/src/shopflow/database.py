@@ -21,9 +21,7 @@ Base = declarative_base()
 
 def get_db():
     db = SessionLocal()
-    logger.info("Database session opened")
     try:
         yield db
     finally:
         db.close()
-        logger.info("Database session closed")

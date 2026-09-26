@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter,Depends, HTTPException
 from shopflow.database import get_db
 from sqlalchemy import select
@@ -32,37 +34,37 @@ def add_product(data:Product,db :Session = Depends(get_db)):
     return product
 
 @router.delete('/products')
-def delete_product(id:str,db :Session = Depends(get_db)):
-    logger.info("Deleting product", extra={"id": id})
+def delete_product(id: UUID, db: Session = Depends(get_db)):
+    logger.info("Deleting product", extra={"id": str(id)})
     stmt = select(ProductModel).where(ProductModel.id == id)
     product = db.scalar(stmt)
     if not product:
-        logger.warning("Product not found for delete", extra={"id": id})
+        logger.warning("Product not found for delete", extra={"id": str(id)})
         raise HTTPException(status_code=404, detail="Product not found")
     db.delete(product)
     db.commit()
-    logger.info("Product deleted", extra={"id": id})
+    logger.info("Product deleted", extra={"id": str(id)})
     return {
         "message": "Product deleted successfully",
-        "product_id": id
+        "product_id": str(id)
     }
 
 @router.patch('/products')
-def update_product(id:str, data:ProductUpdate, db :Session = Depends(get_db)):
-    logger.info("Updating product", extra={"id": id})
+def update_product(id: UUID, data: ProductUpdate, db: Session = Depends(get_db)):
+    logger.info("Updating product", extra={"id": str(id)})
     stmt = select(ProductModel).where(ProductModel.id == id)
     product = db.scalar(stmt)
     if not product:
-        logger.warning("Product not found for update", extra={"id": id})
+        logger.warning("Product not found for update", extra={"id": str(id)})
         raise HTTPException(status_code=404, detail="Product not found")
 
     update_data = data.model_dump(exclude_unset=True)
-    logger.info("Applying product updates", extra={"id": id, "fields": list(update_data.keys())})
-    
+    logger.info("Applying product updates", extra={"id": str(id), "fields": list(update_data.keys())})
+
     for key, value in update_data.items():
         setattr(product, key, value)
     db.commit()
     db.refresh(product)
-    logger.info("Product updated", extra={"id": id})
+    logger.info("Product updated", extra={"id": str(id)})
     return product
     
