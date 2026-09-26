@@ -28,6 +28,7 @@ _RESERVED_LOG_RECORD_KEYS = {
     "relativeCreated",
     "stack_info",
     "task",
+    "taskName",
     "thread",
     "threadName",
 }
