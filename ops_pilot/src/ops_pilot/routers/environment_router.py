@@ -44,7 +44,7 @@ def create_environment(
     )
 
 
-@router.put("/{environment_id}", response_model=EnvironmentReadResponse)
+@router.patch("/{environment_id}", response_model=EnvironmentReadResponse)
 def update_environment(
     project_id: UUID,
     service_id: UUID,
