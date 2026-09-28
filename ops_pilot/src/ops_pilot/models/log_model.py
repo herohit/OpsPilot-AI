@@ -2,7 +2,7 @@ from ops_pilot.database import Base
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Uuid, text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, JSON, Uuid, text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -14,7 +14,7 @@ class LogSource(Base):
         primary_key=True,
         default=uuid4,
     )
-    environment_id: Mapped[UUID] = mapped_column(ForeignKey("environment.id"),nullable=False)
+    environment_id: Mapped[UUID] = mapped_column(ForeignKey("environments.id"),nullable=False)
     stream_url: Mapped[str] = mapped_column(nullable=False)
     source_type: Mapped[str] = mapped_column(nullable=False,default="http_stream")
     is_active: Mapped[bool] = mapped_column(default=True)
@@ -23,4 +23,17 @@ class LogSource(Base):
     
     __table_args__ = (
         UniqueConstraint("environment_id", "stream_url", name="uq_environment_stream"),
+    )
+
+
+class Log(Base):
+    __tablename__ = "logs"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    environment_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("environments.id"), nullable=False, index=True
+    )
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    received_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False
     )
