@@ -4,7 +4,6 @@ from uuid import UUID
 from datetime import datetime
 
 class LogSourceCreateRequest(BaseModel):
-    environment_id: UUID
     stream_url: str
     source_type: Optional[str] = "http_stream"
     
