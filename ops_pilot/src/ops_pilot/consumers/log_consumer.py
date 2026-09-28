@@ -4,7 +4,8 @@ import logging
 from uuid import UUID
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import insert, select
+from sqlalchemy.exc import SQLAlchemyError
 
 from ops_pilot.database import SessionLocal
 from ops_pilot.models.log_model import Log, LogSource
@@ -73,6 +74,7 @@ class LogConsumeManager:
         environment_id: UUID,
         stream_url: str,
     ) -> None:
+        queue: list[dict] = []
         if self.client is None:
             raise RuntimeError("HTTP client is not initialized")
         while True:
@@ -90,12 +92,37 @@ class LogConsumeManager:
                         if not isinstance(payload, dict):
                             logger.warning("Skipping non-object log from source %s", source_id)
                             continue
-
-                        with SessionLocal() as db:
-                            db.add(Log(environment_id=environment_id, payload=payload))
-                            db.commit()
+                        queue.append(payload)
+                        if len(queue) >= 20:
+                            self._flush_batch(queue, environment_id)
+                    self._flush_batch(queue, environment_id)
             except asyncio.CancelledError:
+                try:
+                    self._flush_batch(queue, environment_id)
+                except SQLAlchemyError:
+                    logger.exception("Could not flush logs while stopping source %s", source_id)
                 raise
             except (httpx.HTTPError, OSError) as error:
+                try:
+                    self._flush_batch(queue, environment_id)
+                except SQLAlchemyError:
+                    logger.exception("Could not flush logs for source %s", source_id)
                 logger.warning("Log source %s disconnected: %s", source_id, error)
                 await asyncio.sleep(2)
+            except SQLAlchemyError:
+                logger.exception("Could not save logs for source %s; will retry", source_id)
+                await asyncio.sleep(2)
+
+    @staticmethod
+    def _flush_batch(queue: list[dict], environment_id: UUID) -> None:
+        if not queue:
+            return
+
+        rows = [
+            {"environment_id": environment_id, "payload": payload}
+            for payload in queue
+        ]
+        with SessionLocal() as db:
+            db.execute(insert(Log), rows)
+            db.commit()
+        queue.clear()
