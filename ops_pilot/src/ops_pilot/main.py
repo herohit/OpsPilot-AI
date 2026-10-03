@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
+from fastapi.middleware.cors import CORSMiddleware
 from ops_pilot.database import Base, engine
 from ops_pilot.models import auth_model, environment_model, project_model, service_model
 from ops_pilot.models import log_model
@@ -24,6 +25,15 @@ async def lifespan(app: FastAPI):
     await log_consumer.stop()
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(auth_router)
 app.include_router(project_router)
 app.include_router(services_router)
