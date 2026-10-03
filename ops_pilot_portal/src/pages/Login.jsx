@@ -1,30 +1,76 @@
 import React, { useState } from 'react'
-import { ArrowRight, Eye, EyeOff, FileText, Layers, LockKeyhole, Mail, Rocket, TrendingUp } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, FileText, Layers, LockKeyhole, Mail, Rocket, Sparkles, TrendingUp } from 'lucide-react'
 import LoginImg from '../assets/login.png'
 import Github from '../assets/github.svg'
 import GoogleIcon from '../assets/google-icon.svg'
 import { useForm } from "react-hook-form"
+import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router'
+import { zodResolver } from "@hookform/resolvers/zod";
+import { loginSchema } from "../schemas/authSchema";
+import api from "../api/client";
+import { useAuthStore } from "../store/authStore";
 
 
 const Login = () => {
-    const {
+    
+  const login = useAuthStore((state) => state.login);
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
+  const logout = useAuthStore((state) => state.logout);
+  
+  const {
     register,
     handleSubmit,
+    setValue,
     watch,
     formState: { errors },
-  } = useForm()
-  const [showPassword, setShowPassword] = useState(false)
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+  });
+
+
+  const [showPassword, setShowPassword] = useState(false);
+
   const features = [
     { label: 'Manage your infrastructure', Icon: Layers },
     { label: 'Monitor services in real-time', Icon: TrendingUp },
     { label: 'View logs and metrics', Icon: FileText },
     { label: 'Deploy with confidence', Icon: Rocket },
-  ]
+  ];
 
-  const onSubmit = (data) => {
-    console.log(data)
-    console.log("Form submitted")
-  }
+  const navigate = useNavigate();
+
+  const onSubmit = async (data) => {
+    try {
+      const formData = new URLSearchParams();
+      formData.append("username",data.email);
+      formData.append("password",data.password);
+
+      const response = await api.post('/login',formData,{
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      });
+
+      const accessToken = response.data.access_token;
+      setAccessToken(accessToken);
+      // The Axios interceptor attaches the stored token.
+      const userResponse = await api.get("/users/me");
+      login(userResponse.data, accessToken);
+
+      navigate("/dashboard", { replace: true });
+      toast.success('Login successful');
+    } catch (error) {
+      logout();
+      console.error(error);
+      toast.error('Login failed');
+    }
+  };
+
+  const fillDemoCredentials = () => {
+    setValue('email', 'rohit@gmail.com', { shouldValidate: true });
+    setValue('password', 'test123', { shouldValidate: true });
+  };
 
   return (
   <div className="login-container min-h-screen md:flex">
@@ -80,13 +126,7 @@ const Login = () => {
             <label htmlFor="email" className="block text-sm font-medium text-slate-800">Email</label>
             <div className="relative mt-1.5">
               <Mail aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-              <input {...register("email", {
-                required: true,
-                pattern: {
-                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: 'Please enter a valid email address.',
-                },
-              })} type="email" id="email" name="email" placeholder="you@company.com" autoComplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'email-error' : undefined} className={`h-11 w-full rounded-lg border bg-white pl-10 pr-3 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.email ? 'border-red-500' : 'border-slate-200'}`} />
+              <input {...register("email")} type="email" id="email" name="email" placeholder="you@company.com" autoComplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'email-error' : undefined} className={`h-11 w-full rounded-lg border bg-white pl-10 pr-3 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.email ? 'border-red-500' : 'border-slate-200'}`} />
             </div>
             {errors.email && <p id="email-error" role="alert" className="mt-1.5 text-sm text-red-600">{errors.email.message}</p>}
           </div>
@@ -95,13 +135,7 @@ const Login = () => {
             <label htmlFor="password" className="block text-sm font-medium text-slate-800">Password</label>
             <div className="relative mt-1.5">
               <LockKeyhole aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-              <input {...register("password", { 
-                required: true,
-                minLength: {
-                  value: 3,
-                  message: 'Password must be at least 3 characters long.',
-                },
-              })}
+              <input {...register("password")}
                 type={showPassword ? 'text' : 'password'} id="password" name="password" placeholder="Enter your password" autoComplete="current-password" aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'password-error' : undefined} className={`h-11 w-full rounded-lg border bg-white pl-10 pr-11 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.password ? 'border-red-500' : 'border-slate-200'}`} />
               <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
                 {showPassword ? <EyeOff aria-hidden="true" className="h-4 w-4" /> : <Eye aria-hidden="true" className="h-4 w-4" />}
@@ -116,6 +150,15 @@ const Login = () => {
 
           <button type="submit" className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
             Sign in <ArrowRight aria-hidden="true" className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={fillDemoCredentials}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+          >
+            <Sparkles aria-hidden="true" className="h-4 w-4" />
+            Use demo credentials
           </button>
         </form>
 
@@ -140,6 +183,7 @@ const Login = () => {
         </p>
       </div>
     </section>
+    
     </div>
   )
 }
