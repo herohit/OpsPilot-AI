@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { ArrowRight, Eye, EyeOff, FileText, Layers, LockKeyhole, Mail, Rocket, Sparkles, TrendingUp } from 'lucide-react'
 import LoginImg from '../assets/login.png'
-import Github from '../assets/github.svg'
-import GoogleIcon from '../assets/google-icon.svg'
+import OpsPilotLogo from '../components/OpsPilotLogo'
+import SocialAuthButtons from '../components/SocialAuthButtons'
+import TrustedTeams from '../components/TrustedTeams'
 import { useForm } from "react-hook-form"
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router'
@@ -23,7 +24,6 @@ const Login = () => {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
@@ -79,13 +79,7 @@ const Login = () => {
       <img className="absolute inset-0 h-full w-full object-cover object-center brightness-75 saturate-125" src={LoginImg} alt="" />
       <div className="absolute inset-0 bg-gradient-to-b from-[#030817]/70 via-transparent to-[#030817]/35" />
       <div className="relative z-10 flex min-h-[720px] flex-col px-6 py-8 sm:px-10 md:min-h-screen md:px-12 md:py-10">
-        <div className="flex items-center gap-3">
-          <span className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-blue-600">
-            <span className="absolute h-1 w-11 rotate-[-45deg] bg-[#06112c]" />
-            <span className="relative h-2.5 w-2.5 rounded-full bg-white" />
-          </span>
-          <span className="text-xl font-semibold tracking-tight">OpsPilot</span>
-        </div>
+        <OpsPilotLogo />
 
         <div className="mt-7 max-w-md">
           <h1 className="text-[27px] font-semibold leading-tight tracking-tight sm:text-3xl">
@@ -104,14 +98,7 @@ const Login = () => {
           </ul>
         </div>
 
-        <div className="mt-auto rounded-xl border border-white/10 bg-[#07122b]/75 px-4 py-3 backdrop-blur-sm">
-          <p className="text-[11px] text-slate-300">Trusted by modern teams</p>
-          <div className="mt-2 flex items-center justify-between gap-2 text-xs font-semibold text-white sm:text-sm">
-            <span className="flex items-center gap-1.5"><span aria-hidden="true" className="text-base">▲</span> Vercel</span>
-            <span className="text-base font-bold tracking-tight">aws</span>
-            <span className="flex items-center gap-1.5"><span aria-hidden="true" className="text-base">◈</span> Google Cloud</span>
-          </div>
-        </div>
+        <TrustedTeams />
       </div>
     </section>
 
@@ -163,21 +150,7 @@ const Login = () => {
           </button>
         </form>
 
-        <div className="my-6 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-          <span className="h-px flex-1 bg-slate-200" />
-          Or continue with
-          <span className="h-px flex-1 bg-slate-200" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <button type="button" className="flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-800 hover:bg-slate-50 cursor-pointer">
-            <img src={Github} alt="GitHub" className="h-5 w-5" />
-            GitHub
-          </button>
-          <button type="button" className="flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-800 hover:bg-slate-50 cursor-pointer">
-            <img src={GoogleIcon} alt="Google" className="h-5 w-5" /> Google
-          </button>
-        </div>
+        <SocialAuthButtons />
 
         <p className="mt-8 text-center text-sm text-slate-500">
           Don't have an account? <a href="#" className="font-medium text-blue-600 hover:text-blue-700">Sign up</a>

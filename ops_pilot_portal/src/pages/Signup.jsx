@@ -10,10 +10,9 @@ import {
   UserRound,
 } from "lucide-react";
 import SigninImg from "../assets/opspilot-create-account.png";
-import GoogleBWIcon from "../assets/google-white-icon.svg";
-import AwsBWIcon from "../assets/aws-logo.png";
-import Github from "../assets/github.svg";
-import GoogleIcon from "../assets/google-icon.svg";
+import OpsPilotLogo from "../components/OpsPilotLogo";
+import SocialAuthButtons from "../components/SocialAuthButtons";
+import TrustedTeams from "../components/TrustedTeams";
 import { useForm, useWatch } from "react-hook-form";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router";
@@ -90,15 +89,7 @@ const Signup = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#030817]/70 via-transparent to-[#030817]/35" />
         <div className="relative z-10 flex min-h-[720px] flex-col px-6 py-8 sm:px-10 md:min-h-screen md:px-12 md:py-10">
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-blue-600">
-              <span className="absolute h-1 w-11 rotate-[-45deg] bg-[#06112c]" />
-              <span className="relative h-2.5 w-2.5 rounded-full bg-white" />
-            </span>
-            <span className="text-xl font-semibold tracking-tight">
-              OpsPilot
-            </span>
-          </div>
+          <OpsPilotLogo />
 
           <div className="mt-10 max-w-md sm:mt-12">
             <h1 className="text-[28px] font-semibold leading-[1.2] tracking-normal text-white sm:text-3xl lg:text-4xl">
@@ -113,38 +104,7 @@ const Signup = () => {
             </p>
           </div>
 
-          <div className="mt-auto rounded-xl border border-white/10 bg-[#07122b]/75 px-4 py-3 backdrop-blur-sm">
-            <p className="text-[11px] text-slate-300">
-              Trusted by modern teams
-            </p>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-xs font-semibold leading-5 sm:text-sm">
-              <span className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap">
-                <span
-                  aria-hidden="true"
-                  className="flex h-6 w-6 shrink-0 items-center justify-center text-lg leading-none text-white"
-                >
-                  ▲
-                </span>
-                <span className="block shrink-0 text-white">Vercel</span>
-              </span>
-              <span className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap">
-                <img
-                  src={AwsBWIcon}
-                  alt=""
-                  className="h-6 w-6 shrink-0 object-contain"
-                />
-                <span className="block shrink-0 text-white">AWS</span>
-              </span>
-              <span className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap">
-                <img
-                  src={GoogleBWIcon}
-                  alt=""
-                  className="h-6 w-6 shrink-0 object-contain"
-                />
-                <span className="block shrink-0 text-white">Google Cloud</span>
-              </span>
-            </div>
-          </div>
+          <TrustedTeams />
         </div>
       </section>
 
@@ -300,33 +260,11 @@ const Signup = () => {
             </button>
           </form>
 
-          <div className="my-6 flex items-center gap-3 text-[10px] font-medium uppercase text-slate-400">
-            <span className="h-px flex-1 bg-slate-200" />
-            Or continue with
-            <span className="h-px flex-1 bg-slate-200" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() =>
-                toast.error("GitHub sign-up is not available yet.")
-              }
-              className="flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-transparent text-sm font-medium text-slate-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-500 cursor-pointer"
-            >
-              <img src={Github} alt="" className="h-5 w-5" />
-              GitHub
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                toast.error("Google sign-up is not available yet.")
-              }
-              className="flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-transparent text-sm font-medium text-slate-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-500 cursor-pointer"
-            >
-              <img src={GoogleIcon} alt="" className="h-5 w-5" /> Google
-            </button>
-          </div>
+          <SocialAuthButtons
+            variant="signup"
+            onGithub={() => toast.error("GitHub sign-up is not available yet.")}
+            onGoogle={() => toast.error("Google sign-up is not available yet.")}
+          />
 
           <p className="mt-6 text-center text-[13px] text-slate-500">
             Already have an account?{" "}
