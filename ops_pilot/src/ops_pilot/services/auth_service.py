@@ -6,7 +6,7 @@ from uuid import UUID
 
 import jwt
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, Response, status
+from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
@@ -154,11 +154,19 @@ def register(db: Session, user: UserCreateRequest) -> UserModel:
     return db_user
 
 
-def refresh(db: Session, refresh_token: str) -> TokenResponse:
+def refresh(db: Session, request_: Request, response: Response) -> TokenResponse:
+    print("Refreshing access token...As page reloads")
+    refresh_token : str | None = request_.cookies.get("refresh_token")
+    print("Refresh token from cookies:", refresh_token)
+    if not refresh_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token missing"
+        )
     try:
         token_id, secret = refresh_token.split(".", 1)
         token_id = UUID(token_id)
-    except ValueError, AttributeError:
+    except (ValueError, AttributeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
@@ -193,9 +201,18 @@ def refresh(db: Session, refresh_token: str) -> TokenResponse:
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     new_refresh_token = create_refresh_token(db, user)
+    # Put NEW refresh token into browser cookie
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=60 * 60 * 24 * 7,
+    )
     db.commit()
     return TokenResponse(
-        access_token=access_token, refresh_token=new_refresh_token, token_type="bearer"
+        access_token=access_token, token_type="bearer"
     )
 
 
@@ -203,7 +220,7 @@ def logout(db: Session, refresh_token: str) -> dict[str, str]:
     try:
         token_id, _ = refresh_token.split(".", 1)
         token_id = UUID(token_id)
-    except ValueError, AttributeError:
+    except (ValueError, AttributeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -30,8 +30,8 @@ def register_user(user: UserCreateRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/auth/refresh", response_model=TokenResponse)
-def refresh_access_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
-	return auth_service.refresh(db, request.refresh_token)
+def refresh_access_token(request_: Request, response: Response, db: Session = Depends(get_db)):
+	return auth_service.refresh(db, request_, response)
 
 
 @router.post("/auth/logout")
