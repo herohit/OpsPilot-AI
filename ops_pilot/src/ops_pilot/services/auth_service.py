@@ -6,7 +6,7 @@ from uuid import UUID
 
 import jwt
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
@@ -110,7 +110,7 @@ def get_current_user(
     return user
 
 
-def login(db: Session, username: str, password: str) -> TokenResponse:
+def login(db: Session, username: str, password: str,response: Response) -> TokenResponse:
     user = authenticate_user(db, username, password)
     if not user:
         raise HTTPException(
@@ -123,8 +123,16 @@ def login(db: Session, username: str, password: str) -> TokenResponse:
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     refresh_token = create_refresh_token(db, user)
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=False,       # HTTPS in production
+        samesite="lax",
+        max_age=60 * 60 * 24 * 7,
+    )
     return TokenResponse(
-        access_token=access_token, token_type="bearer", refresh_token=refresh_token
+        access_token=access_token, token_type="bearer"
     )
 
 

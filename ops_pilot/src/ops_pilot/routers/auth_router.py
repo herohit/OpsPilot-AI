@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -14,9 +14,9 @@ router = APIRouter()
 
 @router.post("/login")
 async def login_for_access_token(
-	form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)
+	form_data: Annotated[OAuth2PasswordRequestForm, Depends()],response:Response, db: Session = Depends(get_db)
 ):
-	return auth_service.login(db, form_data.username, form_data.password)
+	return auth_service.login(db, form_data.username, form_data.password, response)
 
 
 @router.get("/users/me", response_model=UserResponse)
