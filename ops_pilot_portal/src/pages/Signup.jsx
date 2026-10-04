@@ -10,6 +10,8 @@ import {
   UserRound,
 } from "lucide-react";
 import SigninImg from "../assets/opspilot-create-account.png";
+import GoogleBWIcon from "../assets/google-white-icon.svg";
+import AwsBWIcon from "../assets/aws-logo.png";
 import Github from "../assets/github.svg";
 import GoogleIcon from "../assets/google-icon.svg";
 import { useForm, useWatch } from "react-hook-form";
@@ -38,7 +40,10 @@ const Signup = () => {
     const Icon = satisfied ? CircleCheck : Circle;
 
     return (
-      <li key={rule.label} className="flex items-center gap-2 text-xs leading-4 text-slate-500">
+      <li
+        key={rule.label}
+        className="flex items-center gap-2 text-xs leading-4 text-slate-500"
+      >
         <Icon
           aria-hidden="true"
           className={`h-4 w-4 shrink-0 ${satisfied ? "fill-emerald-400 text-white" : "text-slate-300"}`}
@@ -67,7 +72,11 @@ const Signup = () => {
       navigate("/login", { replace: true });
     } catch (error) {
       const detail = error.response?.data?.detail;
-      toast.error(typeof detail === "string" ? detail : "Unable to create your account. Please try again.");
+      toast.error(
+        typeof detail === "string"
+          ? detail
+          : "Unable to create your account. Please try again.",
+      );
     }
   };
 
@@ -108,19 +117,31 @@ const Signup = () => {
             <p className="text-[11px] text-slate-300">
               Trusted by modern teams
             </p>
-            <div className="mt-2 flex items-center justify-between gap-2 text-xs font-semibold text-white sm:text-sm">
-              <span className="flex items-center gap-1.5">
-                <span aria-hidden="true" className="text-base">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-xs font-semibold leading-5 sm:text-sm">
+              <span className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap">
+                <span
+                  aria-hidden="true"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center text-lg leading-none text-white"
+                >
                   ▲
-                </span>{" "}
-                Vercel
+                </span>
+                <span className="block shrink-0 text-white">Vercel</span>
               </span>
-              <span className="text-base font-bold tracking-tight">aws</span>
-              <span className="flex items-center gap-1.5">
-                <span aria-hidden="true" className="text-base">
-                  ◈
-                </span>{" "}
-                Google Cloud
+              <span className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap">
+                <img
+                  src={AwsBWIcon}
+                  alt=""
+                  className="h-6 w-6 shrink-0 object-contain"
+                />
+                <span className="block shrink-0 text-white">AWS</span>
+              </span>
+              <span className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap">
+                <img
+                  src={GoogleBWIcon}
+                  alt=""
+                  className="h-6 w-6 shrink-0 object-contain"
+                />
+                <span className="block shrink-0 text-white">Google Cloud</span>
               </span>
             </div>
           </div>
@@ -130,7 +151,9 @@ const Signup = () => {
       <section className="flex min-h-[680px] items-center justify-center bg-[#fcfdff] px-6 py-12 tracking-normal text-slate-900 md:min-h-screen md:flex-1 md:px-10">
         <div className="w-full max-w-[360px]">
           <header className="mb-6">
-            <h2 className="text-2xl font-bold leading-tight">Create your account</h2>
+            <h2 className="text-2xl font-bold leading-tight">
+              Create your account
+            </h2>
             <p className="mt-2 text-sm text-slate-500">
               Fill in your details to get started
             </p>
@@ -142,11 +165,17 @@ const Signup = () => {
             className="space-y-4"
           >
             <div>
-              <label htmlFor="fullName" className="block text-[13px] font-medium text-slate-800">
+              <label
+                htmlFor="fullName"
+                className="block text-[13px] font-medium text-slate-800"
+              >
                 Full name
               </label>
               <div className="relative mt-1.5">
-                <UserRound aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <UserRound
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+                />
                 <input
                   {...register("fullName")}
                   type="text"
@@ -154,12 +183,18 @@ const Signup = () => {
                   placeholder="John Doe"
                   autoComplete="name"
                   aria-invalid={Boolean(errors.fullName)}
-                  aria-describedby={errors.fullName ? "full-name-error" : undefined}
+                  aria-describedby={
+                    errors.fullName ? "full-name-error" : undefined
+                  }
                   className={`h-11 w-full rounded-md border bg-transparent pl-10 pr-3 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.fullName ? "border-red-500" : "border-slate-200"}`}
                 />
               </div>
               {errors.fullName && (
-                <p id="full-name-error" role="alert" className="mt-1.5 text-sm text-red-600">
+                <p
+                  id="full-name-error"
+                  role="alert"
+                  className="mt-1.5 text-sm text-red-600"
+                >
                   {errors.fullName.message}
                 </p>
               )}
@@ -221,7 +256,9 @@ const Signup = () => {
                   autoComplete="new-password"
                   aria-invalid={Boolean(errors.password)}
                   aria-describedby={
-                    errors.password ? "password-requirements password-error" : "password-requirements"
+                    errors.password
+                      ? "password-requirements password-error"
+                      : "password-requirements"
                   }
                   className={`h-11 w-full rounded-md border bg-transparent pl-10 pr-11 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.password ? "border-red-500" : "border-slate-200"}`}
                 />
@@ -272,7 +309,9 @@ const Signup = () => {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => toast.error("GitHub sign-up is not available yet.")}
+              onClick={() =>
+                toast.error("GitHub sign-up is not available yet.")
+              }
               className="flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-transparent text-sm font-medium text-slate-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-500 cursor-pointer"
             >
               <img src={Github} alt="" className="h-5 w-5" />
@@ -280,7 +319,9 @@ const Signup = () => {
             </button>
             <button
               type="button"
-              onClick={() => toast.error("Google sign-up is not available yet.")}
+              onClick={() =>
+                toast.error("Google sign-up is not available yet.")
+              }
               className="flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-transparent text-sm font-medium text-slate-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-500 cursor-pointer"
             >
               <img src={GoogleIcon} alt="" className="h-5 w-5" /> Google
