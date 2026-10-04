@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "../schemas/authSchema";
 import api from "../api/client";
 import { useAuthStore } from "../store/authStore";
+import { getCurrentUser } from "../api/Authapi";
 
 
 const Login = () => {
@@ -55,8 +56,8 @@ const Login = () => {
       const accessToken = response.data.access_token;
       setAccessToken(accessToken);
       // The Axios interceptor attaches the stored token.
-      const userResponse = await api.get("/users/me");
-      login(userResponse.data, accessToken);
+      const userResponse = await getCurrentUser();
+      login(userResponse, accessToken);
 
       navigate("/dashboard", { replace: true });
       toast.success('Login successful');

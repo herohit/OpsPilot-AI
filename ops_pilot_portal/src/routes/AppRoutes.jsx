@@ -1,10 +1,11 @@
-import { Navigate, Outlet, Route, Routes } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import GuestRoutes from "./GuestRoutes";
 import Signup from "../pages/Signup";
 import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
 import PageNotFound from "../pages/PageNotFound";
 import ProtectedRoute from "./ProtectedRoutes";
+
 
 function AppRoutes() {
   return (
