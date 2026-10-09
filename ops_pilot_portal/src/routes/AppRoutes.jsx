@@ -5,6 +5,7 @@ import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
 import PageNotFound from "../pages/PageNotFound";
 import ProtectedRoute from "./ProtectedRoutes";
+import AppLayout from "../layout/AppLayout";
 
 
 function AppRoutes() {
@@ -13,11 +14,13 @@ function AppRoutes() {
       {/* Guest routes */}
       <Route element={<GuestRoutes />}>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Signup />} />
       </Route>
+      <Route path="/register" element={<Signup />} />
 
       <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route element={<AppLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<PageNotFound />} />
