@@ -15,6 +15,7 @@ from ops_pilot.services.auth_service import get_current_user
 
 
 router = APIRouter(prefix="/projects/{project_id}/services", tags=["services"])
+user_services_router = APIRouter(prefix="/services", tags=["services"])
 
 
 @router.post("", response_model=ServiceResponse)
@@ -25,6 +26,13 @@ def create_service(
     db: Session = Depends(get_db),
 ):
     return service_service.create_service(db, project_id, current_user.id, data)
+
+@user_services_router.get("", response_model=list[ServiceResponse])
+def get_all_services(
+    current_user: UserModel = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service_service.get_all_services(db, current_user.id)
 
 
 @router.get("", response_model=list[ServiceResponse])

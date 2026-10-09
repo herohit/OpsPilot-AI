@@ -11,6 +11,15 @@ from ops_pilot.services import deployment_service
 router = APIRouter(
     prefix="/projects/{project_id}/services/{service_id}/environments/{environment_id}/deployments",
     tags=["deployments"])
+user_deployments_router = APIRouter(prefix="/deployments", tags=["deployments"])
+
+
+@user_deployments_router.get("", response_model=list[DeploymentReadResponse])
+def get_all_deployments(
+    current_user: UserModel = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return deployment_service.get_all_deployments(db, current_user.id)
 
 
 @router.get("", response_model=list[DeploymentReadResponse])

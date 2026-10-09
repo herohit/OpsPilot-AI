@@ -6,8 +6,20 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from ops_pilot.models.deployment_model import Deployment
+from ops_pilot.models.environment_model import Environment
+from ops_pilot.models.project_model import Project
 from ops_pilot.schemas.deployment_schema import DeploymentUpdateRequest
 from ops_pilot.services.environment_service import get_environment
+
+
+def get_all_deployments(db: Session, owner_id: UUID) -> list[Deployment]:
+    statement = (
+        select(Deployment)
+        .join(Environment, Deployment.environment_id == Environment.id)
+        .join(Project, Environment.project_id == Project.id)
+        .where(Project.owner_id == owner_id)
+    )
+    return list(db.scalars(statement).all())
 
 
 def get_deployment(db: Session, project_id: UUID, service_id: UUID, environment_id: UUID, deployment_id: UUID, current_user_id: UUID):

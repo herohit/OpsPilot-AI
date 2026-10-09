@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ops_pilot.models.project_model import Project
 from ops_pilot.models.service_model import Service
 from ops_pilot.schemas.service_schema import ServiceCreateRequest, ServiceUpdateRequest
 from ops_pilot.services.project_service import get_project
@@ -19,6 +20,14 @@ def create_service(
     db.refresh(service)
     return service
 
+
+def get_all_services(db: Session, owner_id: UUID) -> list[Service]:
+    statement = (
+        select(Service)
+        .join(Project, Service.project_id == Project.id)
+        .where(Project.owner_id == owner_id)
+    )
+    return list(db.scalars(statement).all())
 
 def get_services(db: Session, project_id: UUID, owner_id: UUID):
     get_project(db, project_id, owner_id)

@@ -157,7 +157,6 @@ def register(db: Session, user: UserCreateRequest) -> UserModel:
 def refresh(db: Session, request_: Request, response: Response) -> TokenResponse:
     print("Refreshing access token...As page reloads")
     refresh_token : str | None = request_.cookies.get("refresh_token")
-    print("Refresh token from cookies:", refresh_token)
     if not refresh_token:
         raise HTTPException(
             status_code=401,

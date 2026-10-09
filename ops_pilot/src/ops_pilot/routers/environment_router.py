@@ -17,6 +17,15 @@ router = APIRouter(
     prefix="/projects/{project_id}/services/{service_id}/environments",
     tags=["environments"],
 )
+user_environments_router = APIRouter(prefix="/environments", tags=["environments"])
+
+
+@user_environments_router.get("", response_model=list[EnvironmentReadResponse])
+def get_all_environments(
+    current_user: UserModel = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return environment_service.get_all_environments(db, current_user.id)
 
 
 @router.get("", response_model=list[EnvironmentReadResponse])

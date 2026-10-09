@@ -5,11 +5,21 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ops_pilot.models.environment_model import Environment
+from ops_pilot.models.project_model import Project
 from ops_pilot.schemas.environment_schema import (
     EnvironmentCreateRequest,
     EnvironmentUpdateRequest,
 )
 from ops_pilot.services.service_service import get_service
+
+
+def get_all_environments(db: Session, owner_id: UUID) -> list[Environment]:
+    statement = (
+        select(Environment)
+        .join(Project, Environment.project_id == Project.id)
+        .where(Project.owner_id == owner_id)
+    )
+    return list(db.scalars(statement).all())
 
 
 def get_environments(db: Session, project_id: UUID, service_id: UUID, owner_id: UUID):
