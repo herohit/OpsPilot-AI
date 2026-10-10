@@ -33,3 +33,9 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
     model_config = ConfigDict(from_attributes=True)
+
+class UserUpdateRequest(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+
+    model_config = ConfigDict(extra="forbid")

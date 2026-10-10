@@ -15,7 +15,12 @@ from sqlalchemy.orm import Session
 
 from ops_pilot.database import get_db
 from ops_pilot.models.auth_model import RefreshTokenModel, UserModel
-from ops_pilot.schemas.auth_schema import TokenPayload, TokenResponse, UserCreateRequest
+from ops_pilot.schemas.auth_schema import (
+    TokenPayload,
+    TokenResponse,
+    UserCreateRequest,
+    UserUpdateRequest,
+)
 
 load_dotenv()
 
@@ -86,6 +91,15 @@ def create_refresh_token(db: Session, user: UserModel) -> str:
 
 def get_user_by_email(db: Session, email: str):
     return db.scalar(select(UserModel).where(UserModel.email == email))
+
+
+def update_user(db: Session, user: UserModel, data: UserUpdateRequest) -> UserModel:
+    for key, value in data.model_dump(exclude_unset=True).items():
+        if value is not None:
+            setattr(user, key, value.strip())
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 def get_current_user(

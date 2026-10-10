@@ -6,7 +6,13 @@ from sqlalchemy.orm import Session
 
 from ops_pilot.database import get_db
 from ops_pilot.models.auth_model import UserModel
-from ops_pilot.schemas.auth_schema import RefreshTokenRequest, TokenResponse, UserCreateRequest, UserResponse
+from ops_pilot.schemas.auth_schema import (
+	RefreshTokenRequest,
+	TokenResponse,
+	UserCreateRequest,
+	UserResponse,
+	UserUpdateRequest,
+)
 from ops_pilot.services import auth_service
 
 router = APIRouter()
@@ -22,6 +28,15 @@ async def login_for_access_token(
 @router.get("/users/me", response_model=UserResponse)
 async def read_users_me(current_user: UserModel = Depends(auth_service.get_current_user)):
 	return current_user
+
+
+@router.patch("/users/me", response_model=UserResponse)
+def update_users_me(
+	request: UserUpdateRequest,
+	current_user: UserModel = Depends(auth_service.get_current_user),
+	db: Session = Depends(get_db),
+):
+	return auth_service.update_user(db, current_user, request)
 
 
 @router.post("/register", response_model=UserResponse)
