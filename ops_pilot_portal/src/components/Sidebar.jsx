@@ -13,11 +13,11 @@ import OpsPilotLogo from "./OpsPilotLogo";
 
 const navigation = [
   { label: "Dashboard", Icon: House, to: "/dashboard" },
-  { label: "Projects", Icon: BriefcaseBusiness , to:'/projects' },
-  { label: "Services", Icon: Layers , to:'/services' },
+  { label: "Projects", Icon: BriefcaseBusiness, to: "/projects" },
+  { label: "Services", Icon: Layers, to: "/services" },
   { label: "Environments", Icon: Box, to: "/environments" },
   { label: "Deployments", Icon: Rocket, to: "/deployments" },
-  { label: "Logs", Icon: FileText },
+  { label: "Logs", Icon: FileText, to: "/logs" },
   { label: "Settings", Icon: Settings, to: "/settings" },
 ];
 

@@ -13,7 +13,7 @@ from ops_pilot.routers.services_router import router as services_router
 from ops_pilot.routers.services_router import user_services_router
 from ops_pilot.routers.deployment_router import router as deployment_router
 from ops_pilot.routers.deployment_router import user_deployments_router
-from ops_pilot.routers.log_router import router as log_router
+from ops_pilot.routers.log_router import router as log_router, logs_router
 from ops_pilot.consumers.log_consumer import LogConsumeManager
 
 log_consumer = LogConsumeManager()
@@ -46,3 +46,4 @@ app.include_router(user_environments_router)
 app.include_router(deployment_router)
 app.include_router(user_deployments_router)
 app.include_router(log_router)
+app.include_router(logs_router)
