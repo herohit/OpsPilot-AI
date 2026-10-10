@@ -1,6 +1,7 @@
 from ops_pilot.database import Base
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
@@ -12,7 +13,10 @@ from sqlalchemy import (
     text,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from ops_pilot.models.environment_model import Environment
 
 
 class DeploymentStatus(str, Enum):
@@ -61,3 +65,5 @@ class Deployment(Base):
         onupdate=text("CURRENT_TIMESTAMP"),
         nullable=False,
     )
+
+    environment: Mapped["Environment"] = relationship(back_populates="deployments")

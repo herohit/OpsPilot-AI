@@ -1,9 +1,13 @@
 from ops_pilot.database import Base
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, JSON, Uuid, text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from ops_pilot.models.environment_model import Environment
 
 
 class LogSource(Base):
@@ -25,6 +29,8 @@ class LogSource(Base):
         UniqueConstraint("environment_id", "stream_url", name="uq_environment_stream"),
     )
 
+    environment: Mapped["Environment"] = relationship(back_populates="log_sources")
+
 
 class Log(Base):
     __tablename__ = "logs"
@@ -37,3 +43,5 @@ class Log(Base):
     received_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False
     )
+
+    environment: Mapped["Environment"] = relationship(back_populates="logs")

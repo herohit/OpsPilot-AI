@@ -1,9 +1,15 @@
 from ops_pilot.database import Base
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, String, Uuid, text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from ops_pilot.models.deployment_model import Deployment
+    from ops_pilot.models.log_model import Log, LogSource
+    from ops_pilot.models.service_model import Service
 
 
 class Environment(Base):
@@ -49,6 +55,17 @@ class Environment(Base):
         server_default=text("CURRENT_TIMESTAMP"),
         onupdate=text("CURRENT_TIMESTAMP"),
         nullable=False,
+    )
+
+    service: Mapped["Service"] = relationship(back_populates="environments")
+    deployments: Mapped[list["Deployment"]] = relationship(
+        back_populates="environment", cascade="all, delete-orphan"
+    )
+    logs: Mapped[list["Log"]] = relationship(
+        back_populates="environment", cascade="all, delete-orphan"
+    )
+    log_sources: Mapped[list["LogSource"]] = relationship(
+        back_populates="environment", cascade="all, delete-orphan"
     )
 
     __table_args__ = (

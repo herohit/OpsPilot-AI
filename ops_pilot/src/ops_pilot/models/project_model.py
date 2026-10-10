@@ -1,9 +1,13 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from ops_pilot.database import Base
 from sqlalchemy import DateTime, ForeignKey, String, Uuid, text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from ops_pilot.models.service_model import Service
 
 
 class Project(Base):
@@ -18,6 +22,10 @@ class Project(Base):
     owner_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("user.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), onupdate=text("CURRENT_TIMESTAMP"), nullable=False)
+
+    services: Mapped[list["Service"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
     
     __table_args__ = (
         UniqueConstraint('name', 'owner_id', name='uq_project_name_owner_id'),
