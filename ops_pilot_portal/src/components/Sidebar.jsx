@@ -15,7 +15,7 @@ const navigation = [
   { label: "Dashboard", Icon: House, to: "/dashboard" },
   { label: "Projects", Icon: BriefcaseBusiness , to:'/projects' },
   { label: "Services", Icon: Layers , to:'/services' },
-  { label: "Environments", Icon: Box },
+  { label: "Environments", Icon: Box, to: "/environments" },
   { label: "Deployments", Icon: Rocket },
   { label: "Logs", Icon: FileText },
   { label: "Settings", Icon: Settings },

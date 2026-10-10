@@ -6,6 +6,8 @@ import Projects from "../pages/Projects";
 import CreateProject from "../pages/CreateProject";
 import ProjectDetail from "../pages/ProjectDetail";
 import Dashboard from "../pages/Dashboard";
+import Services from "../pages/Services";
+import Environments from "../pages/Environments";
 import PageNotFound from "../pages/PageNotFound";
 import ProtectedRoute from "./ProtectedRoutes";
 import AppLayout from "../layout/AppLayout";
@@ -23,6 +25,8 @@ function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/environments" element={<Environments />} />
           <Route path="/projects/new" element={<CreateProject />} />
           <Route path="/projects/:projectId" element={<ProjectDetail />} />
           <Route path="/projects" element={<Projects />} />

@@ -36,8 +36,73 @@ export const getServices = async () => {
   return response.data;
 };
 
+export const createService = async (projectId, serviceData) => {
+  const response = await api.post(
+    `/projects/${projectId}/services`,
+    serviceData,
+  );
+
+  return response.data;
+};
+
+export const updateService = async (projectId, serviceId, serviceData) => {
+  const response = await api.patch(
+    `/projects/${projectId}/services/${serviceId}`,
+    serviceData,
+  );
+
+  return response.data;
+};
+
+export const deleteService = async (projectId, serviceId) => {
+  const response = await api.delete(
+    `/projects/${projectId}/services/${serviceId}`,
+  );
+
+  return response.data;
+};
+
 export const getEnvironments = async () => {
   const response = await api.get("/environments");
+
+  return response.data;
+};
+
+export const createEnvironment = async (
+  projectId,
+  serviceId,
+  environmentData,
+) => {
+  const response = await api.post(
+    `/projects/${projectId}/services/${serviceId}/environments`,
+    environmentData,
+  );
+
+  return response.data;
+};
+
+export const updateEnvironment = async (
+  projectId,
+  serviceId,
+  environmentId,
+  environmentData,
+) => {
+  const response = await api.patch(
+    `/projects/${projectId}/services/${serviceId}/environments/${environmentId}`,
+    environmentData,
+  );
+
+  return response.data;
+};
+
+export const deleteEnvironment = async (
+  projectId,
+  serviceId,
+  environmentId,
+) => {
+  const response = await api.delete(
+    `/projects/${projectId}/services/${serviceId}/environments/${environmentId}`,
+  );
 
   return response.data;
 };
