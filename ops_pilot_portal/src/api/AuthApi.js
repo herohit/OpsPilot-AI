@@ -11,3 +11,9 @@ export const getCurrentUser = async () => {
 
   return response.data;
 };
+
+export const updateCurrentUser = async (userData) => {
+  const response = await api.patch("/users/me", userData);
+
+  return response.data;
+};

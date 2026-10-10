@@ -1,8 +1,9 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 export default function ResourceActionsMenu({ label, onEdit, onDelete }) {
   const menu = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const runAction = (action) => {
     menu.current.open = false;
@@ -10,7 +11,11 @@ export default function ResourceActionsMenu({ label, onEdit, onDelete }) {
   };
 
   return (
-    <details ref={menu} className="relative shrink-0">
+    <details
+      ref={menu}
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+      className={`relative shrink-0 ${isOpen ? "z-40" : "z-0"}`}
+    >
       <summary
         aria-label={`${label} actions`}
         title="Actions"
@@ -18,12 +23,20 @@ export default function ResourceActionsMenu({ label, onEdit, onDelete }) {
       >
         <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
       </summary>
-      <div className="absolute right-0 top-9 z-20 min-w-36 rounded-md border border-slate-200 bg-white p-1 shadow-lg">
-        <button type="button" onClick={() => runAction(onEdit)} className="flex h-9 w-full items-center gap-2 rounded px-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+      <div className="absolute right-0 top-9 z-50 min-w-36 rounded-md border border-slate-200 bg-white p-1 shadow-lg">
+        <button
+          type="button"
+          onClick={() => runAction(onEdit)}
+          className="flex h-9 w-full items-center gap-2 rounded px-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+        >
           <Pencil aria-hidden="true" className="h-4 w-4" />
           Edit
         </button>
-        <button type="button" onClick={() => runAction(onDelete)} className="flex h-9 w-full items-center gap-2 rounded px-2 text-left text-sm text-rose-600 hover:bg-rose-50">
+        <button
+          type="button"
+          onClick={() => runAction(onDelete)}
+          className="flex h-9 w-full items-center gap-2 rounded px-2 text-left text-sm text-rose-600 hover:bg-rose-50"
+        >
           <Trash2 aria-hidden="true" className="h-4 w-4" />
           Delete
         </button>

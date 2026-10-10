@@ -11,6 +11,8 @@ export default function AppLayout() {
   const isCreateProjectPage = pathname === "/projects/new";
   const isServicesPage = pathname === "/services";
   const isEnvironmentsPage = pathname === "/environments";
+  const isDeploymentsPage = pathname === "/deployments";
+  const isSettingsPage = pathname === "/settings";
   const isProjectDetailPage =
     pathname.startsWith("/projects/") && !isCreateProjectPage;
 
@@ -52,7 +54,11 @@ export default function AppLayout() {
                   ? "Services"
                   : isEnvironmentsPage
                     ? "Environments"
-                : "Dashboard"
+                    : isDeploymentsPage
+                      ? "Deployments"
+                      : isSettingsPage
+                        ? "Settings"
+                        : "Dashboard"
           }
           description={
             isCreateProjectPage
@@ -63,9 +69,13 @@ export default function AppLayout() {
                   ? "Manage services across your projects"
                   : isEnvironmentsPage
                     ? "Monitor environments and recent deployments"
-                : "Overview of your infrastructure and deployments"
+                    : isDeploymentsPage
+                      ? "Track and manage your service deployments"
+                      : isSettingsPage
+                        ? "Manage your account and organization settings"
+                        : "Overview of your infrastructure and deployments"
           }
-          showDateRange={!isProjectsPage && !isCreateProjectPage && !isServicesPage && !isEnvironmentsPage}
+          showDateRange={!isProjectsPage && !isCreateProjectPage && !isServicesPage && !isEnvironmentsPage && !isDeploymentsPage && !isSettingsPage}
           showPageHeading={!isProjectDetailPage}
         />
         <main className="flex flex-1 flex-col py-1 sm:px-4">

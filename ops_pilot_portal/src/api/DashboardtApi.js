@@ -113,6 +113,35 @@ export const getDeployments = async () => {
   return response.data;
 };
 
+export const createDeployment = async (
+  projectId,
+  serviceId,
+  environmentId,
+  deploymentData,
+) => {
+  const response = await api.post(
+    `/projects/${projectId}/services/${serviceId}/environments/${environmentId}/deployments`,
+    deploymentData,
+  );
+
+  return response.data;
+};
+
+export const updateDeployment = async (
+  projectId,
+  serviceId,
+  environmentId,
+  deploymentId,
+  deploymentData,
+) => {
+  const response = await api.patch(
+    `/projects/${projectId}/services/${serviceId}/environments/${environmentId}/deployments/${deploymentId}`,
+    deploymentData,
+  );
+
+  return response.data;
+};
+
 export const getLogSources = async (projectId, serviceId, environmentId) => {
   const response = await api.get(
     `/projects/${projectId}/services/${serviceId}/environments/${environmentId}/log-sources`,

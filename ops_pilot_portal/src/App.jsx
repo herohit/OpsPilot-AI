@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import './App.css'
 import AppRoutes from './routes/AppRoutes'
-import { getCurrentUser, refreshAccessToken } from './api/Authapi'
+import { getCurrentUser, refreshAccessToken } from './api/AuthApi'
 import { useAuthStore } from './store/authStore'
 
 let sessionRestorePromise;

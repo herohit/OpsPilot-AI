@@ -11,7 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "../schemas/authSchema";
 import api from "../api/client";
 import { useAuthStore } from "../store/authStore";
-import { getCurrentUser } from "../api/Authapi";
+import { getCurrentUser } from "../api/AuthApi";
 
 
 const Login = () => {

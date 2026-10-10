@@ -16,9 +16,9 @@ const navigation = [
   { label: "Projects", Icon: BriefcaseBusiness , to:'/projects' },
   { label: "Services", Icon: Layers , to:'/services' },
   { label: "Environments", Icon: Box, to: "/environments" },
-  { label: "Deployments", Icon: Rocket },
+  { label: "Deployments", Icon: Rocket, to: "/deployments" },
   { label: "Logs", Icon: FileText },
-  { label: "Settings", Icon: Settings },
+  { label: "Settings", Icon: Settings, to: "/settings" },
 ];
 
 export default function Sidebar({ isOpen, onClose, searchQuery = "" }) {
