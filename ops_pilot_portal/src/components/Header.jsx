@@ -16,6 +16,7 @@ export default function Header({
   title = "Dashboard",
   description = "Overview of your infrastructure and deployments",
   showDateRange = true,
+  showPageHeading = true,
 }) {
   const user = useAuthStore((state) => state.user);
   const fullName = [user?.first_name, user?.last_name]
@@ -128,7 +129,7 @@ export default function Header({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+      {showPageHeading && <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-[28px] font-bold leading-tight tracking-normal sm:text-3xl">
             {title}
@@ -154,7 +155,7 @@ export default function Header({
             />
           </label>
         )}
-      </div>
+      </div>}
     </header>
   );
 }

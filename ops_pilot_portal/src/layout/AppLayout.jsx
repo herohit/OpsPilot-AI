@@ -9,6 +9,8 @@ export default function AppLayout() {
   const { pathname } = useLocation();
   const isProjectsPage = pathname === "/projects";
   const isCreateProjectPage = pathname === "/projects/new";
+  const isProjectDetailPage =
+    pathname.startsWith("/projects/") && !isCreateProjectPage;
 
   useEffect(() => {
     if (!sidebarOpen) return;
@@ -54,6 +56,7 @@ export default function AppLayout() {
                 : "Overview of your infrastructure and deployments"
           }
           showDateRange={!isProjectsPage && !isCreateProjectPage}
+          showPageHeading={!isProjectDetailPage}
         />
         <main className="flex flex-1 flex-col py-1 sm:px-4">
           <Outlet />
