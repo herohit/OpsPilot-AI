@@ -29,7 +29,7 @@ export default function Header({
     .toUpperCase();
 
   return (
-    <header className="border-b border-slate-200/70 bg-[#f8faff] px-5 pb-6 pt-5 text-slate-900 sm:px-8">
+    <header className="border-b border-slate-200/70 bg-[#f8faff] px-5 pb-4 pt-3 text-slate-900 sm:px-8">
       <div className="flex flex-wrap items-center gap-3 sm:gap-5">
         <button
           type="button"
@@ -127,7 +127,7 @@ export default function Header({
         </div>
       </div>
 
-      <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-[28px] font-bold leading-tight tracking-normal sm:text-3xl">
             {title}

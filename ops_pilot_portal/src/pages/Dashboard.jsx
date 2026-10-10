@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Box, BriefcaseBusiness, Layers, Rocket } from "lucide-react";
-import DashboardStatCard from "../components/DashboardStatCard";
+import DashboardStatCard from "../components/dashboard/DashboardStatCard";
+import DeploymentsPanel from "../components/dashboard/DeploymentsPanel";
+import InfrastructureHealthPanel from "../components/dashboard/InfrastructureHealthPanel";
+import RecentLogsPanel from "../components/dashboard/RecentLogsPanel";
+import ResourceUsagePanel from "../components/dashboard/ResourceUsagePanel";
 import useProjectStore from "../store/projectStore";
 import {
   getProjects,
@@ -10,12 +14,12 @@ import {
 } from "../api/DashboardtApi";
 
 const Dashboard = () => {
-  // Access projects from the store
   const projects = useProjectStore((state) => state.projects);
   const setProjects = useProjectStore((state) => state.setProjects);
   const [serviceStats, setServiceStats] = useState(null);
   const [environmentStats, setEnvironmentStats] = useState(null);
   const [deploymentStats, setDeploymentStats] = useState(null);
+  const [environments, setEnvironments] = useState([]);
   useEffect(() => {
     const load_dashboard = async () => {
       try {
@@ -34,6 +38,9 @@ const Dashboard = () => {
         setEnvironmentStats(
           result[2].status === "fulfilled" ? result[2].value : null,
         );
+        setEnvironments(
+          result[2].status === "fulfilled" ? result[2].value : [],
+        );
         setDeploymentStats(
           result[3].status === "fulfilled" ? result[3].value : [],
         );
@@ -43,6 +50,24 @@ const Dashboard = () => {
     };
     load_dashboard();
   }, [setProjects]);
+  const deployments = [...(deploymentStats ?? [])].sort(
+    (first, second) =>
+      new Date(second.deployed_at).getTime() -
+      new Date(first.deployed_at).getTime(),
+  );
+  const environmentNames = new Map(
+    environments.map((environment) => [environment.id, environment.name]),
+  );
+  const healthCounts = deployments.reduce(
+    (counts, deployment) => {
+      const status = deployment.status?.toLowerCase();
+      if (status === "success") counts.healthy += 1;
+      else if (status === "failed" || status === "cancelled") counts.unhealthy += 1;
+      else counts.degraded += 1;
+      return counts;
+    },
+    { healthy: 0, degraded: 0, unhealthy: 0 },
+  );
 
   const stats = [
     {
@@ -80,21 +105,36 @@ const Dashboard = () => {
   ];
 
   return (
-    <section aria-label="Dashboard statistics">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
-        {stats.map(({ title, count, Icon, iconClassName, trendLabel, trendDirection }) => (
-          <DashboardStatCard
-            key={title}
-            count={count}
-            title={title}
-            Icon={Icon}
-            iconClassName={iconClassName}
-            trendLabel={trendLabel}
-            trendDirection={trendDirection}
-          />
-        ))}
-      </div>
-    </section>
+    <div className="flex flex-col gap-3 pb-2 xl:grid xl:flex-1 xl:grid-rows-[auto_minmax(0,1fr)_minmax(0,1fr)]">
+      <section aria-label="Dashboard statistics">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+          {stats.map(({ title, count, Icon, iconClassName, trendLabel, trendDirection }) => (
+            <DashboardStatCard
+              key={title}
+              count={count}
+              title={title}
+              Icon={Icon}
+              iconClassName={iconClassName}
+              trendLabel={trendLabel}
+              trendDirection={trendDirection}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-3 xl:grid-cols-[1.15fr_0.85fr]" aria-label="Deployment and infrastructure overview">
+        <DeploymentsPanel deployments={deployments} environmentNames={environmentNames} />
+        <InfrastructureHealthPanel healthCounts={healthCounts} />
+      </section>
+
+      <section className="grid gap-3 xl:grid-cols-2" aria-label="Recent activity and resource usage">
+        <RecentLogsPanel
+          deployments={deployments}
+          environmentNames={environmentNames}
+        />
+        <ResourceUsagePanel />
+      </section>
+    </div>
   );
 };
 

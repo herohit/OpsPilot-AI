@@ -1,4 +1,3 @@
-import React from 'react'
 import { ArrowLeft, CircleAlert } from 'lucide-react'
 import { Link } from 'react-router'
 import LoginImg from '../assets/login.png'
