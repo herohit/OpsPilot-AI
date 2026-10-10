@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { pathname } = useLocation();
+  const isProjectsPage = pathname === "/projects";
+  const isCreateProjectPage = pathname === "/projects/new";
 
   useEffect(() => {
     if (!sidebarOpen) return;
@@ -36,6 +39,21 @@ export default function AppLayout() {
           onOpenSidebar={() => setSidebarOpen(true)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          title={
+            isCreateProjectPage
+              ? "Create a new project"
+              : isProjectsPage
+                ? "Projects"
+                : "Dashboard"
+          }
+          description={
+            isCreateProjectPage
+              ? "Set up a new project to organise your services and environments."
+              : isProjectsPage
+                ? "Manage your projects and their infrastructure"
+                : "Overview of your infrastructure and deployments"
+          }
+          showDateRange={!isProjectsPage && !isCreateProjectPage}
         />
         <main className="flex flex-1 flex-col py-1 sm:px-4">
           <Outlet />

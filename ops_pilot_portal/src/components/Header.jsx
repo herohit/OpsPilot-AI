@@ -15,6 +15,7 @@ export default function Header({
   workspaceName = "OpsPilot",
   title = "Dashboard",
   description = "Overview of your infrastructure and deployments",
+  showDateRange = true,
 }) {
   const user = useAuthStore((state) => state.user);
   const fullName = [user?.first_name, user?.last_name]
@@ -136,21 +137,23 @@ export default function Header({
             {description}
           </p>
         </div>
-        <label className="relative flex h-10 shrink-0 items-center rounded-md border border-slate-200 bg-white shadow-sm">
-          <span className="sr-only">Date range</span>
-          <select
-            defaultValue="7"
-            className="h-full appearance-none rounded-md bg-transparent pl-4 pr-10 text-sm font-medium text-slate-600 focus:outline-2 focus:outline-blue-600"
-          >
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-          </select>
-          <ChevronDown
-            aria-hidden="true"
-            className="pointer-events-none absolute right-3 h-4 w-4 text-slate-400"
-          />
-        </label>
+        {showDateRange && (
+          <label className="relative flex h-10 shrink-0 items-center rounded-md border border-slate-200 bg-white shadow-sm">
+            <span className="sr-only">Date range</span>
+            <select
+              defaultValue="7"
+              className="h-full appearance-none rounded-md bg-transparent pl-4 pr-10 text-sm font-medium text-slate-600 focus:outline-2 focus:outline-blue-600"
+            >
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+            <ChevronDown
+              aria-hidden="true"
+              className="pointer-events-none absolute right-3 h-4 w-4 text-slate-400"
+            />
+          </label>
+        )}
       </div>
     </header>
   );

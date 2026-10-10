@@ -6,6 +6,12 @@ export const getProjects = async () => {
   return response.data;
 };
 
+export const createProject = async (projectData) => {
+  const response = await api.post("/projects", projectData);
+
+  return response.data;
+};
+
 export const getServices = async () => {
   const response = await api.get("/services");
 

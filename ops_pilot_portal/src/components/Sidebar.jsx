@@ -13,8 +13,8 @@ import OpsPilotLogo from "./OpsPilotLogo";
 
 const navigation = [
   { label: "Dashboard", Icon: House, to: "/dashboard" },
-  { label: "Projects", Icon: BriefcaseBusiness },
-  { label: "Services", Icon: Layers },
+  { label: "Projects", Icon: BriefcaseBusiness , to:'/projects' },
+  { label: "Services", Icon: Layers , to:'/services' },
   { label: "Environments", Icon: Box },
   { label: "Deployments", Icon: Rocket },
   { label: "Logs", Icon: FileText },
@@ -51,7 +51,7 @@ export default function Sidebar({ isOpen, onClose, searchQuery = "" }) {
             <NavLink
               key={label}
               to={to}
-              end
+              end={to === "/dashboard"}
               onClick={onClose}
               className={({ isActive }) =>
                 `flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-blue-400 ${isActive ? "bg-[#23365d] text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"}`
