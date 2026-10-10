@@ -14,6 +14,13 @@ def create_service(
     db: Session, project_id: UUID, owner_id: UUID, data: ServiceCreateRequest
 ) -> Service:
     get_project(db, project_id, owner_id)
+    # Check if service exists for the given project
+    existing_service = db.scalar(
+        select(Service).where(Service.project_id == project_id, Service.name == data.name)
+    )
+    if existing_service:
+        raise HTTPException(status_code=400, detail="Service already exists for this project")
+    
     service = Service(**data.model_dump(), project_id=project_id)
     db.add(service)
     db.commit()
