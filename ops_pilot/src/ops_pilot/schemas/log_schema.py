@@ -26,4 +26,16 @@ class LogSourceResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class LogEntryResponse(BaseModel):
+    id: UUID
+    environment_id: UUID
+    environment_name: str
+    service_id: UUID
+    service_name: str
+    level: str
+    message: str
+    payload: dict
+    received_at: datetime
     
