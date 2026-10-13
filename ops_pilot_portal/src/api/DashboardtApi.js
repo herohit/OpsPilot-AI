@@ -149,3 +149,23 @@ export const getLogSources = async (projectId, serviceId, environmentId) => {
 
   return response.data;
 };
+
+export const createLogSource = async (
+  projectId,
+  serviceId,
+  environmentId,
+  sourceData,
+) => {
+  const response = await api.post(
+    `/projects/${projectId}/services/${serviceId}/environments/${environmentId}/log-sources`,
+    sourceData,
+  );
+
+  return response.data;
+};
+
+export const getLogs = async (filters = {}) => {
+  const response = await api.get("/logs", { params: filters });
+
+  return response.data;
+};
