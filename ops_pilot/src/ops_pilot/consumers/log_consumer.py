@@ -1,14 +1,16 @@
 import asyncio
 import json
 import logging
+from datetime import datetime, timezone
 from uuid import UUID
 
 import httpx
-from sqlalchemy import insert, select
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from ops_pilot.database import SessionLocal
 from ops_pilot.models.log_model import Log, LogSource
+from ops_pilot.services.log_stream import log_stream_hub
 
 
 logger = logging.getLogger(__name__)
@@ -61,9 +63,11 @@ class LogConsumeManager:
 
             for source_id, (environment_id, stream_url) in current_configs.items():
                 if source_id not in self.tasks:
-                    self.source_configs[source_id] = (environment_id, stream_url)
+                    self.source_configs[source_id] = (
+                        environment_id, stream_url)
                     self.tasks[source_id] = asyncio.create_task(
-                        self._consume_stream(UUID(source_id), UUID(environment_id), stream_url)
+                        self._consume_stream(UUID(source_id), UUID(
+                            environment_id), stream_url)
                     )
 
             await asyncio.sleep(5)
@@ -75,54 +79,110 @@ class LogConsumeManager:
         stream_url: str,
     ) -> None:
         queue: list[dict] = []
-        if self.client is None:
+        client = self.client
+        if client is None:
             raise RuntimeError("HTTP client is not initialized")
         while True:
             try:
-                async with self.client.stream("GET", stream_url) as response:
-                    response.raise_for_status()
-                    async for line in response.aiter_lines():
-                        if not line:
-                            continue
-                        try:
-                            payload = json.loads(line)
-                        except json.JSONDecodeError:
-                            logger.warning("Skipping invalid JSON from log source %s", source_id)
-                            continue
-                        if not isinstance(payload, dict):
-                            logger.warning("Skipping non-object log from source %s", source_id)
-                            continue
-                        queue.append(payload)
-                        if len(queue) >= 20:
-                            self._flush_batch(queue, environment_id)
-                    self._flush_batch(queue, environment_id)
+                await self._read_stream(
+                    client, source_id, environment_id, stream_url, queue
+                )
             except asyncio.CancelledError:
                 try:
                     self._flush_batch(queue, environment_id)
                 except SQLAlchemyError:
-                    logger.exception("Could not flush logs while stopping source %s", source_id)
+                    logger.exception(
+                        "Could not flush logs while stopping source %s", source_id)
                 raise
             except (httpx.HTTPError, OSError) as error:
                 try:
                     self._flush_batch(queue, environment_id)
                 except SQLAlchemyError:
-                    logger.exception("Could not flush logs for source %s", source_id)
-                logger.warning("Log source %s disconnected: %s", source_id, error)
+                    logger.exception(
+                        "Could not flush logs for source %s", source_id)
+                logger.warning("Log source %s disconnected: %s",
+                               source_id, error)
                 await asyncio.sleep(2)
             except SQLAlchemyError:
-                logger.exception("Could not save logs for source %s; will retry", source_id)
+                logger.exception(
+                    "Could not save logs for source %s; will retry", source_id)
                 await asyncio.sleep(2)
+
+    async def _read_stream(
+        self,
+        client: httpx.AsyncClient,
+        source_id: UUID,
+        environment_id: UUID,
+        stream_url: str,
+        queue: list[dict],
+    ) -> None:
+        async with client.stream("GET", stream_url) as response:
+            response.raise_for_status()
+            flush_task = asyncio.create_task(
+                self._flush_periodically(queue, environment_id)
+            )
+            try:
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        payload = json.loads(line)
+                    except json.JSONDecodeError:
+                        logger.warning(
+                            "Skipping invalid JSON from log source %s", source_id
+                        )
+                        continue
+                    if not isinstance(payload, dict):
+                        logger.warning(
+                            "Skipping non-object log from source %s", source_id
+                        )
+                        continue
+                    queue.append(payload)
+                    if len(queue) >= 20:
+                        self._flush_batch(queue, environment_id)
+            finally:
+                flush_task.cancel()
+                await asyncio.gather(flush_task, return_exceptions=True)
+            self._flush_batch(queue, environment_id)
+
+    @staticmethod
+    async def _flush_periodically(
+        queue: list[dict], environment_id: UUID
+    ) -> None:
+        while True:
+            await asyncio.sleep(1)
+            try:
+                LogConsumeManager._flush_batch(queue, environment_id)
+            except SQLAlchemyError:
+                logger.exception(
+                    "Could not flush pending logs for environment %s", environment_id)
 
     @staticmethod
     def _flush_batch(queue: list[dict], environment_id: UUID) -> None:
         if not queue:
             return
 
+        received_at = datetime.now(timezone.utc)
         rows = [
-            {"environment_id": environment_id, "payload": payload}
+            Log(
+                environment_id=environment_id,
+                payload=payload,
+                received_at=received_at,
+            )
             for payload in queue
         ]
         with SessionLocal() as db:
-            db.execute(insert(Log), rows)
+            db.add_all(rows)
+            db.flush()
+            events = [
+                {
+                    "id": str(log.id),
+                    "environment_id": str(log.environment_id),
+                    "payload": log.payload,
+                    "received_at": log.received_at.isoformat(),
+                }
+                for log in rows
+            ]
             db.commit()
         queue.clear()
+        log_stream_hub.publish(events)
