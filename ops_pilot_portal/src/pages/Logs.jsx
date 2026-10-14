@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
 import toast from "react-hot-toast";
+import { Link } from "react-router";
 import {
   createLogSource,
   getEnvironments,
@@ -236,6 +237,11 @@ export default function Logs() {
 
   return (
     <section className="space-y-4 pb-8" aria-label="Logs">
+      <div className="flex justify-end">
+        <Link to="/logs/history" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+          Browse log history
+        </Link>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(9rem,0.8fr)_minmax(9rem,0.8fr)_minmax(7rem,0.6fr)_minmax(8rem,0.7fr)_minmax(14rem,1.5fr)_auto]">
         <label className="flex h-10 items-center rounded-md border border-slate-200 bg-white px-3 shadow-sm">
           <span className="sr-only">Filter by service</span>
