@@ -1,3 +1,4 @@
+import random
 from uuid import UUID
 
 from fastapi import APIRouter,Depends, HTTPException
@@ -68,3 +69,42 @@ def update_product(id: UUID, data: ProductUpdate, db: Session = Depends(get_db))
     logger.info("Product updated", extra={"id": str(id)})
     return product
     
+
+LOG_MESSAGES = {
+    "debug": [
+        "Cache lookup completed successfully",
+        "Request validation completed",
+        "Worker heartbeat received",
+    ],
+    "info": [
+        "User logged in successfully",
+        "Database query executed successfully",
+        "Background job completed",
+        "API request processed successfully",
+    ],
+    "warning": [
+        "API response time exceeded threshold",
+        "Database connection pool is nearly full",
+        "Retrying failed request",
+    ],
+    "error": [
+        "Failed to connect to database",
+        "Background job execution failed",
+        "External API request failed",
+    ],
+    "critical": [
+        "Database connection limit reached",
+        "Worker service is unavailable",
+    ],
+}
+
+
+@router.get("/generate_logs")
+def generate_random_logs():
+    for _ in range(10):
+        level = random.choice(list(LOG_MESSAGES.keys()))
+        message = random.choice(LOG_MESSAGES[level])
+
+        getattr(logger, level)(message)
+
+    return {"message": "Logs generated successfully"}
