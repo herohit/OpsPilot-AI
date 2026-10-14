@@ -14,6 +14,7 @@ export default function AppLayout() {
   const isDeploymentsPage = pathname === "/deployments";
   const isSettingsPage = pathname === "/settings";
   const isLogsPage = pathname === "/logs";
+  const isLogHistoryPage = pathname === "/logs/history";
   const isProjectDetailPage =
     pathname.startsWith("/projects/") && !isCreateProjectPage;
 
@@ -59,6 +60,8 @@ export default function AppLayout() {
                       ? "Deployments"
                       : isSettingsPage
                         ? "Settings"
+                        : isLogHistoryPage
+                          ? "Log history"
                         : isLogsPage
                           ? "Logs"
                           : "Dashboard"
@@ -76,6 +79,8 @@ export default function AppLayout() {
                       ? "Track and manage your service deployments"
                       : isSettingsPage
                         ? "Manage your account and organization settings"
+                        : isLogHistoryPage
+                          ? "Browse stored logs from your services and environments"
                         : isLogsPage
                           ? "View and search logs from your services"
                           : "Overview of your infrastructure and deployments"
@@ -87,7 +92,8 @@ export default function AppLayout() {
             !isEnvironmentsPage &&
             !isDeploymentsPage &&
             !isSettingsPage &&
-            !isLogsPage
+            !isLogsPage &&
+            !isLogHistoryPage
           }
           showPageHeading={!isProjectDetailPage}
         />

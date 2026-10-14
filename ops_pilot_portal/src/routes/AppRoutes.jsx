@@ -11,6 +11,7 @@ import Environments from "../pages/Environments";
 import Deployments from "../pages/Deployments";
 import Settings from "../pages/Settings";
 import Logs from "../pages/Logs";
+import LogHistory from "../pages/LogHistory";
 import PageNotFound from "../pages/PageNotFound";
 import ProtectedRoute from "./ProtectedRoutes";
 import AppLayout from "../layout/AppLayout";
@@ -32,6 +33,7 @@ function AppRoutes() {
           <Route path="/deployments" element={<Deployments />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/logs" element={<Logs />} />
+          <Route path="/logs/history" element={<LogHistory />} />
           <Route path="/projects/new" element={<CreateProject />} />
           <Route path="/projects/:projectId" element={<ProjectDetail />} />
           <Route path="/projects" element={<Projects />} />

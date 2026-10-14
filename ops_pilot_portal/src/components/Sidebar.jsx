@@ -3,6 +3,7 @@ import {
   BriefcaseBusiness,
   FileText,
   House,
+  History,
   Layers,
   Rocket,
   Settings,
@@ -18,6 +19,7 @@ const navigation = [
   { label: "Environments", Icon: Box, to: "/environments" },
   { label: "Deployments", Icon: Rocket, to: "/deployments" },
   { label: "Logs", Icon: FileText, to: "/logs" },
+  { label: "Log history", Icon: History, to: "/logs/history" },
   { label: "Settings", Icon: Settings, to: "/settings" },
 ];
 
@@ -51,7 +53,7 @@ export default function Sidebar({ isOpen, onClose, searchQuery = "" }) {
             <NavLink
               key={label}
               to={to}
-              end={to === "/dashboard"}
+              end={to === "/dashboard" || to === "/logs"}
               onClick={onClose}
               className={({ isActive }) =>
                 `flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-blue-400 ${isActive ? "bg-[#23365d] text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"}`
