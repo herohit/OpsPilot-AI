@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from ops_pilot.schemas.log_schema import (
     LogEntryResponse,
+    LogPageResponse,
     LogSourceCreateRequest,
     LogSourceResponse,
 )
@@ -24,6 +25,20 @@ from ops_pilot.services.log_stream import log_stream_hub
 
 router = APIRouter(prefix="/projects/{project_id}/services/{service_id}/environments/{environment_id}/log-sources",tags=["log-sources"])
 logs_router = APIRouter(prefix="/logs", tags=["logs"])
+
+
+@logs_router.get("/history", response_model=LogPageResponse)
+def list_log_history(
+    service_id: UUID | None = None,
+    environment_id: UUID | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    return log_service.list_log_history(
+        db, current_user.id, service_id, environment_id, page, page_size
+    )
 
 
 @logs_router.get("/stream")

@@ -38,4 +38,12 @@ class LogEntryResponse(BaseModel):
     message: str
     payload: dict
     received_at: datetime
+
+
+class LogPageResponse(BaseModel):
+    items: list[LogEntryResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
     

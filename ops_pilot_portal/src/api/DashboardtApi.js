@@ -169,3 +169,9 @@ export const getLogs = async (filters = {}) => {
 
   return response.data;
 };
+
+export const getLogHistory = async (filters = {}, signal) => {
+  const response = await api.get("/logs/history", { params: filters, signal });
+
+  return response.data;
+};

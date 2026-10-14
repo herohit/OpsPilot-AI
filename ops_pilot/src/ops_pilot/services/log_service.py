@@ -5,10 +5,63 @@ from ops_pilot.models.log_model import Log, LogSource
 from ops_pilot.models.project_model import Project
 from ops_pilot.models.service_model import Service
 from ops_pilot.services.environment_service import get_environment
-from ops_pilot.schemas.log_schema import LogSourceCreateRequest
-from sqlalchemy import select
+from ops_pilot.schemas.log_schema import LogEntryResponse, LogPageResponse, LogSourceCreateRequest
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from uuid import UUID
+
+
+def _log_entry(log: Log, environment_name: str, service_id: UUID, service_name: str) -> dict:
+    payload = log.payload if isinstance(log.payload, dict) else {}
+    message_value = payload.get("message", payload.get("msg", payload))
+    return {
+        "id": log.id,
+        "environment_id": log.environment_id,
+        "environment_name": environment_name,
+        "service_id": service_id,
+        "service_name": service_name,
+        "level": str(payload.get("level", payload.get("severity", "INFO"))).upper(),
+        "message": message_value if isinstance(message_value, str) else str(message_value),
+        "payload": payload,
+        "received_at": log.received_at,
+    }
+
+
+def list_log_history(
+    db: Session,
+    owner_id: UUID,
+    service_id: UUID | None,
+    environment_id: UUID | None,
+    page: int,
+    page_size: int,
+) -> LogPageResponse:
+    statement = (
+        select(Log, Environment.name, Service.id, Service.name)
+        .join(Environment, Log.environment_id == Environment.id)
+        .join(Service, Environment.service_id == Service.id)
+        .join(Project, Service.project_id == Project.id)
+        .where(Project.owner_id == owner_id)
+    )
+    if service_id is not None:
+        statement = statement.where(Service.id == service_id)
+    if environment_id is not None:
+        statement = statement.where(Environment.id == environment_id)
+
+    total = db.execute(
+        select(func.count()).select_from(statement.subquery())
+    ).scalar_one()
+    rows = db.execute(
+        statement.order_by(Log.received_at.desc(), Log.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    return LogPageResponse(
+        items=[LogEntryResponse.model_validate(_log_entry(*row)) for row in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=(total + page_size - 1) // page_size,
+    )
 
 
 def list_logs(
@@ -43,27 +96,12 @@ def list_logs(
     for log, environment_name, current_service_id, service_name in db.execute(
         statement.limit(5000)
     ):
-        payload = log.payload if isinstance(log.payload, dict) else {}
-        entry_level = str(payload.get("level", payload.get("severity", "INFO"))).upper()
-        message_value = payload.get("message", payload.get("msg", payload))
-        message = message_value if isinstance(message_value, str) else str(message_value)
-        if normalized_level and entry_level != normalized_level:
+        entry = _log_entry(log, environment_name, current_service_id, service_name)
+        if normalized_level and entry["level"] != normalized_level:
             continue
-        if search_text and search_text not in message.casefold():
+        if search_text and search_text not in entry["message"].casefold():
             continue
-        entries.append(
-            {
-                "id": log.id,
-                "environment_id": log.environment_id,
-                "environment_name": environment_name,
-                "service_id": current_service_id,
-                "service_name": service_name,
-                "level": entry_level,
-                "message": message,
-                "payload": payload,
-                "received_at": log.received_at,
-            }
-        )
+        entries.append(entry)
         if len(entries) >= limit:
             break
     return entries
