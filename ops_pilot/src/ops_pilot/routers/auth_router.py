@@ -15,11 +15,14 @@ from ops_pilot.schemas.auth_schema import (
 )
 from ops_pilot.services import auth_service
 
+from ops_pilot.core.rate_limiter import limiter
+
 router = APIRouter()
 
-
 @router.post("/login")
+@limiter.limit("5/minute")
 async def login_for_access_token(
+    request: Request,
 	form_data: Annotated[OAuth2PasswordRequestForm, Depends()],response:Response, db: Session = Depends(get_db)
 ):
 	return auth_service.login(db, form_data.username, form_data.password, response)
@@ -31,16 +34,19 @@ async def read_users_me(current_user: UserModel = Depends(auth_service.get_curre
 
 
 @router.patch("/users/me", response_model=UserResponse)
+@limiter.limit("5/minute")
 def update_users_me(
-	request: UserUpdateRequest,
+	request: Request,
+	user_data: UserUpdateRequest,
 	current_user: UserModel = Depends(auth_service.get_current_user),
 	db: Session = Depends(get_db),
 ):
-	return auth_service.update_user(db, current_user, request)
+	return auth_service.update_user(db, current_user, user_data)
 
 
 @router.post("/register", response_model=UserResponse)
-def register_user(user: UserCreateRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register_user(request: Request, user: UserCreateRequest, db: Session = Depends(get_db)):
 	return auth_service.register(db, user)
 
 

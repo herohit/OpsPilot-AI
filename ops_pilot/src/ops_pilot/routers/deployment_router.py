@@ -1,7 +1,8 @@
 # GET /projects/{project_id}/services/{service_id}/environments/{environment_id}/deployments
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from uuid import UUID
 from ops_pilot.database import get_db
+from ops_pilot.core.rate_limiter import limiter
 from ops_pilot.models.auth_model import UserModel
 from ops_pilot.schemas.deployment_schema import DeploymentCreateRequest, DeploymentReadResponse, DeploymentUpdateRequest
 from ops_pilot.services.auth_service import get_current_user
@@ -32,9 +33,11 @@ def get_deployment(project_id: UUID, service_id: UUID, environment_id: UUID, dep
 
 
 @router.post("", response_model=DeploymentReadResponse)
-def create_deployment(project_id: UUID, service_id: UUID, environment_id: UUID, data: DeploymentCreateRequest, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def create_deployment(request: Request, project_id: UUID, service_id: UUID, environment_id: UUID, data: DeploymentCreateRequest, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
     return deployment_service.create_deployment(db, project_id, service_id, environment_id, current_user.id, data)
 
 @router.patch("/{deployment_id}", response_model=DeploymentReadResponse)
-def update_deployment(project_id: UUID, service_id: UUID, environment_id: UUID, deployment_id: UUID, data: DeploymentUpdateRequest, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def update_deployment(request: Request, project_id: UUID, service_id: UUID, environment_id: UUID, deployment_id: UUID, data: DeploymentUpdateRequest, current_user: UserModel = Depends(get_current_user), db: Session = Depends(get_db)):
     return deployment_service.update_deployment(db, project_id, service_id, environment_id, deployment_id, current_user.id, data)

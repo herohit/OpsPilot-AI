@@ -1,9 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from ops_pilot.database import get_db
+from ops_pilot.core.rate_limiter import limiter
 from ops_pilot.models.auth_model import UserModel
 from ops_pilot.schemas.environment_schema import (
     EnvironmentCreateRequest,
@@ -41,7 +42,9 @@ def get_environments(
 
 
 @router.post("", response_model=EnvironmentReadResponse)
+@limiter.limit("5/minute")
 def create_environment(
+    request: Request,
     project_id: UUID,
     service_id: UUID,
     environment: EnvironmentCreateRequest,
@@ -54,7 +57,9 @@ def create_environment(
 
 
 @router.patch("/{environment_id}", response_model=EnvironmentReadResponse)
+@limiter.limit("5/minute")
 def update_environment(
+    request: Request,
     project_id: UUID,
     service_id: UUID,
     environment_id: UUID,
@@ -68,7 +73,9 @@ def update_environment(
 
 
 @router.delete("/{environment_id}")
+@limiter.limit("5/minute")
 def delete_environment(
+    request: Request,
     project_id: UUID,
     service_id: UUID,
     environment_id: UUID,

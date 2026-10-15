@@ -1,10 +1,15 @@
+from math import ceil
+
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+from slowapi.errors import RateLimitExceeded
 
 from fastapi.middleware.cors import CORSMiddleware
+
 from ops_pilot.database import Base, engine
-from ops_pilot.models import auth_model, environment_model, project_model, service_model
-from ops_pilot.models import log_model
 from ops_pilot.routers.auth_router import router as auth_router
 from ops_pilot.routers.environment_router import router as environment_router
 from ops_pilot.routers.environment_router import user_environments_router
@@ -15,6 +20,8 @@ from ops_pilot.routers.deployment_router import router as deployment_router
 from ops_pilot.routers.deployment_router import user_deployments_router
 from ops_pilot.routers.log_router import router as log_router, logs_router
 from ops_pilot.consumers.log_consumer import LogConsumeManager
+from ops_pilot.core.rate_limiter import limiter
+
 
 log_consumer = LogConsumeManager()
 
@@ -28,6 +35,42 @@ async def lifespan(app: FastAPI):
     await log_consumer.stop()
 
 app = FastAPI(lifespan=lifespan)
+
+app.state.limiter = limiter
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(
+    request: Request,
+    exc: RateLimitExceeded,
+) -> JSONResponse:
+    retry_after = 60  # Safe fallback
+    current_limit = getattr(
+        request.state, "view_rate_limit", None
+    )
+    if current_limit is not None:
+        try:
+            window_stats = limiter.limiter.get_window_stats(
+                current_limit[0],
+                *current_limit[1],
+            )
+
+            retry_after = max(
+                1,
+                ceil(window_stats[0] - time.time()),
+            )
+        except Exception:
+            pass
+    return JSONResponse(
+        status_code=429,
+        content={
+            "success": False,
+            "error": {
+                "message": "Too many requests. Please try again later.",
+                "retry_after_seconds": retry_after,
+            },
+        },
+        headers={"Retry-After": str(retry_after)},
+    )
 
 app.add_middleware(
     CORSMiddleware,

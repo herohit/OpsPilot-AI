@@ -1,9 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from ops_pilot.database import get_db
+from ops_pilot.core.rate_limiter import limiter
 from ops_pilot.models.auth_model import UserModel
 from ops_pilot.schemas.project_schema import (
     ProjectCreateRequest,
@@ -21,7 +22,9 @@ router = APIRouter(
 
 
 @router.post("", response_model=ProjectResponse, status_code=201)
+@limiter.limit("5/minute")
 def create_project(
+    request: Request,
     project_data: ProjectCreateRequest,
     current_user: UserModel = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -46,7 +49,9 @@ def get_project(
 
 
 @router.patch("/{project_id}", response_model=ProjectResponse)
+@limiter.limit("5/minute")
 def update_project(
+    request: Request,
     project_id: UUID,
     data: ProjectUpdateRequest,
     current_user: UserModel = Depends(get_current_user),
@@ -56,7 +61,9 @@ def update_project(
 
 
 @router.delete("/{project_id}")
+@limiter.limit("5/minute")
 def delete_project(
+    request: Request,
     project_id: UUID,
     current_user: UserModel = Depends(get_current_user),
     db: Session = Depends(get_db),

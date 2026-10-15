@@ -1,9 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from ops_pilot.database import get_db
+from ops_pilot.core.rate_limiter import limiter
 from ops_pilot.models.auth_model import UserModel
 from ops_pilot.schemas.service_schema import (
     ServiceCreateRequest,
@@ -19,7 +20,9 @@ user_services_router = APIRouter(prefix="/services", tags=["services"])
 
 
 @router.post("", response_model=ServiceResponse)
+@limiter.limit("5/minute")
 def create_service(
+    request: Request,
     project_id: UUID,
     data: ServiceCreateRequest,
     current_user: UserModel = Depends(get_current_user),
@@ -55,7 +58,9 @@ def get_service(
 
 
 @router.patch("/{service_id}", response_model=ServiceResponse)
+@limiter.limit("5/minute")
 def update_service(
+    request: Request,
     project_id: UUID,
     service_id: UUID,
     data: ServiceUpdateRequest,
@@ -68,7 +73,9 @@ def update_service(
 
 
 @router.delete("/{service_id}")
+@limiter.limit("5/minute")
 def delete_service(
+    request: Request,
     project_id: UUID,
     service_id: UUID,
     current_user: UserModel = Depends(get_current_user),

@@ -19,6 +19,7 @@ from ops_pilot.schemas.log_schema import (
 from sqlalchemy.orm import Session
 
 from ops_pilot.database import get_db
+from ops_pilot.core.rate_limiter import limiter
 from ops_pilot.services.auth_service import get_current_user
 from ops_pilot.services import log_service
 from ops_pilot.services.log_stream import log_stream_hub
@@ -179,7 +180,9 @@ async def get_log_source(
 
 
 @router.post("", response_model=LogSourceResponse)
+@limiter.limit("5/minute")
 async def create_log_source(
+    request: Request,
     project_id: UUID,
     service_id: UUID,
     environment_id: UUID,
@@ -191,7 +194,9 @@ async def create_log_source(
 
 
 @router.put("/{log_source_id}", response_model=LogSourceResponse)
+@limiter.limit("5/minute")
 async def update_log_source(
+    request: Request,
     project_id: UUID,
     service_id: UUID,
     environment_id: UUID,
@@ -203,7 +208,9 @@ async def update_log_source(
     return log_service.update_log_source(project_id, service_id, environment_id, log_source_id, log_source, db, current_user.id)
 
 @router.delete("/{log_source_id}", response_model=LogSourceResponse)
+@limiter.limit("5/minute")
 async def delete_log_source(
+    request: Request,
     project_id: UUID,
     service_id: UUID,
     environment_id: UUID,
