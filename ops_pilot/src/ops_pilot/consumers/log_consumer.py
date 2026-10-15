@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timezone
+from time import monotonic
 from uuid import UUID
 
 import httpx
@@ -24,7 +25,9 @@ class LogConsumeManager:
         self.client: httpx.AsyncClient | None = None
 
     async def start(self) -> None:
-        self.client = httpx.AsyncClient(timeout=None)
+        self.client = httpx.AsyncClient(
+            timeout=httpx.Timeout(None, connect=10, write=10, pool=10)
+        )
         self.sync_task = asyncio.create_task(self._sync_sources())
 
     async def stop(self) -> None:
@@ -82,31 +85,47 @@ class LogConsumeManager:
         client = self.client
         if client is None:
             raise RuntimeError("HTTP client is not initialized")
-        while True:
+        retry_delay = 2
+        try:
+            while True:
+                attempt_started = monotonic()
+                try:
+                    try:
+                        await self._read_stream(
+                            client, source_id, environment_id, stream_url, queue
+                        )
+                    finally:
+                        if monotonic() - attempt_started >= 60:
+                            retry_delay = 2
+                except (httpx.HTTPError, OSError) as error:
+                    try:
+                        self._flush_batch(queue, environment_id)
+                    except SQLAlchemyError:
+                        logger.exception(
+                            "Could not flush logs for source %s", source_id)
+                    logger.warning(
+                        "Log source %s disconnected: %s; retrying in %ss",
+                        source_id, error, retry_delay,
+                    )
+                except SQLAlchemyError:
+                    logger.exception(
+                        "Could not save logs for source %s; retrying in %ss",
+                        source_id, retry_delay,
+                    )
+                else:
+                    logger.warning(
+                        "Log source %s ended; retrying in %ss",
+                        source_id, retry_delay,
+                    )
+                await asyncio.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, 60)
+        except asyncio.CancelledError:
             try:
-                await self._read_stream(
-                    client, source_id, environment_id, stream_url, queue
-                )
-            except asyncio.CancelledError:
-                try:
-                    self._flush_batch(queue, environment_id)
-                except SQLAlchemyError:
-                    logger.exception(
-                        "Could not flush logs while stopping source %s", source_id)
-                raise
-            except (httpx.HTTPError, OSError) as error:
-                try:
-                    self._flush_batch(queue, environment_id)
-                except SQLAlchemyError:
-                    logger.exception(
-                        "Could not flush logs for source %s", source_id)
-                logger.warning("Log source %s disconnected: %s",
-                               source_id, error)
-                await asyncio.sleep(2)
+                self._flush_batch(queue, environment_id)
             except SQLAlchemyError:
                 logger.exception(
-                    "Could not save logs for source %s; will retry", source_id)
-                await asyncio.sleep(2)
+                    "Could not flush logs while stopping source %s", source_id)
+            raise
 
     async def _read_stream(
         self,
@@ -118,6 +137,7 @@ class LogConsumeManager:
     ) -> None:
         async with client.stream("GET", stream_url) as response:
             response.raise_for_status()
+            logger.info("Log source %s connected", source_id)
             flush_task = asyncio.create_task(
                 self._flush_periodically(queue, environment_id)
             )

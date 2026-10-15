@@ -1,5 +1,14 @@
 # React + Vite
 
+## Log history
+
+Open **Log history** in the sidebar or **Browse log history** on the live logs
+page. The protected `/logs/history` page reads stored database logs with
+server-side pagination, service/environment filters, and 25/50/100 entries per
+page. Filters and page-size changes reset pagination. Use **Refresh** to reload
+the current page and expand **View payload** for the original JSON record.
+The `/logs` page continues to provide live streaming.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
