@@ -4,9 +4,23 @@
 
 Open **Log history** in the sidebar or **Browse log history** on the live logs
 page. The protected `/logs/history` page reads stored database logs with
-server-side pagination, service/environment filters, and 25/50/100 entries per
-page. Filters and page-size changes reset pagination. Use **Refresh** to reload
-the current page and expand **View payload** for the original JSON record.
+server-side pagination and 25/50/100 entries per page. Search messages and
+structured payload fields using **Search** (or Enter), and filter by service,
+environment, severity, and inclusive date/time bounds. Date inputs use your
+local time zone and are sent as UTC; filtering and sorting use received time,
+not the source payload timestamp. Each time the page opens, the date fields
+default to the preceding 24 hours, ending at the time the page opened.
+Click either date box to open the date-range dialog. Select **Done** to apply
+the dates and reset to page one. Editing dates does not update filter state,
+send requests, or change displayed logs. Both dates are required; clearing a
+picker cannot erase the applied range. **Reset to last 24 hours** restores the
+default range in the dialog; **Done** confirms it. **Cancel** or Escape discards
+edits. Invalid ranges cannot be applied. Refresh reloads the applied
+range without moving its bounds. Choose newest or oldest first.
+Filters, sorting, and page-size changes reset pagination.
+Use **Refresh** to reload the current page and expand **Inspect log** for IDs,
+received time, source context (logger/event/module/function/line when present),
+and the complete original JSON payload.
 The `/logs` page continues to provide live streaming.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

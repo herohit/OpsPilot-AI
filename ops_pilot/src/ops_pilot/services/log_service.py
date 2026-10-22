@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 
 from ops_pilot.models.environment_model import Environment
 from ops_pilot.models.log_model import Log, LogSource
@@ -6,7 +7,7 @@ from ops_pilot.models.project_model import Project
 from ops_pilot.models.service_model import Service
 from ops_pilot.services.environment_service import get_environment
 from ops_pilot.schemas.log_schema import LogEntryResponse, LogPageResponse, LogSourceCreateRequest
-from sqlalchemy import func, select
+from sqlalchemy import String, cast, func, select
 from sqlalchemy.orm import Session
 from uuid import UUID
 
@@ -14,6 +15,9 @@ from uuid import UUID
 def _log_entry(log: Log, environment_name: str, service_id: UUID, service_name: str) -> dict:
     payload = log.payload if isinstance(log.payload, dict) else {}
     message_value = payload.get("message", payload.get("msg", payload))
+    received_at = log.received_at
+    if received_at.tzinfo is None:
+        received_at = received_at.replace(tzinfo=timezone.utc)
     return {
         "id": log.id,
         "environment_id": log.environment_id,
@@ -23,7 +27,7 @@ def _log_entry(log: Log, environment_name: str, service_id: UUID, service_name: 
         "level": str(payload.get("level", payload.get("severity", "INFO"))).upper(),
         "message": message_value if isinstance(message_value, str) else str(message_value),
         "payload": payload,
-        "received_at": log.received_at,
+        "received_at": received_at,
     }
 
 
@@ -34,6 +38,12 @@ def list_log_history(
     environment_id: UUID | None,
     page: int,
     page_size: int,
+    *,
+    search: str | None = None,
+    level: str | None = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
+    sort: Literal["asc", "desc"] = "desc",
 ) -> LogPageResponse:
     statement = (
         select(Log, Environment.name, Service.id, Service.name)
@@ -46,12 +56,35 @@ def list_log_history(
         statement = statement.where(Service.id == service_id)
     if environment_id is not None:
         statement = statement.where(Environment.id == environment_id)
+    if search and search.strip():
+        statement = statement.where(
+            cast(Log.payload, String).icontains(search.strip(), autoescape=True)
+        )
+    if level is not None:
+        stored_level = func.upper(func.coalesce(
+            Log.payload["level"].as_string(),
+            Log.payload["severity"].as_string(),
+            "INFO",
+        ))
+        normalized_level = level.upper()
+        if normalized_level in {"WARN", "WARNING"}:
+            statement = statement.where(stored_level.in_(["WARN", "WARNING"]))
+        else:
+            statement = statement.where(stored_level == normalized_level)
+    if start_time is not None:
+        statement = statement.where(Log.received_at >= start_time)
+    if end_time is not None:
+        statement = statement.where(Log.received_at <= end_time)
 
     total = db.execute(
         select(func.count()).select_from(statement.subquery())
     ).scalar_one()
+    order = (
+        (Log.received_at.asc(), Log.id.asc())
+        if sort == "asc" else (Log.received_at.desc(), Log.id.desc())
+    )
     rows = db.execute(
-        statement.order_by(Log.received_at.desc(), Log.id.desc())
+        statement.order_by(*order)
         .offset((page - 1) * page_size)
         .limit(page_size)
     )

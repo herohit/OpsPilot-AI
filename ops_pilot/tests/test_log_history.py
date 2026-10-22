@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, insert
+from sqlalchemy import create_engine, delete, insert
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
@@ -158,6 +158,108 @@ class LogHistoryTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.json(), list)
         self.assertEqual(len(response.json()), 1)
+
+    def add_logs(self, payloads):
+        ids = [uuid4() for _ in payloads]
+        with Session(self.engine) as db:
+            db.execute(insert(Log), [
+                {
+                    "id": log_id,
+                    "environment_id": self.environment_ids[1],
+                    "received_at": self.now,
+                    "payload": payload,
+                }
+                for log_id, payload in zip(ids, payloads)
+            ])
+            db.commit()
+
+        def cleanup():
+            with Session(self.engine) as db:
+                db.execute(delete(Log).where(Log.id.in_(ids)))
+                db.commit()
+
+        self.addCleanup(cleanup)
+        return [str(log_id) for log_id in ids]
+
+    def test_searches_all_history_before_paginating(self):
+        data = self.history(search="rEcOrD 1", page_size=10, page=2)
+        self.assertEqual(data["total"], 1111)
+        self.assertEqual(data["total_pages"], 112)
+        self.assertEqual(len(data["items"]), 10)
+        self.assertTrue(all("Record 1" in item["message"] for item in data["items"]))
+        oldest = self.history(search="Record 1", sort="asc", page_size=1)
+        self.assertEqual(oldest["items"][0]["id"], str(UUID(int=1)))
+        self.assertEqual(self.history(search="no-such-message")["total"], 0)
+        self.assertEqual(self.history(search="  ")["total"], 5008)
+
+    def test_searches_nested_context_and_escapes_sql_wildcards(self):
+        ids = self.add_logs([
+            {"message": "fixture", "context": {"request_id": "Trace-X7"}},
+            {"message": "fixture contains 100%_literal"},
+            {"message": "fixture contains 100XXliteral"},
+        ])
+        self.assertEqual(self.history(search="trace-x7")["items"][0]["id"], ids[0])
+        data = self.history(search="100%_literal")
+        self.assertEqual([item["id"] for item in data["items"]], [ids[1]])
+        self.assertEqual(self.history(search="Private other owner")["total"], 0)
+
+    def test_severity_fallbacks_aliases_and_case(self):
+        ids = self.add_logs([
+            {"message": "fixture", "level": "error"},
+            {"message": "fixture", "severity": "ERROR"},
+            {"message": "fixture", "level": "WARN"},
+            {"message": "fixture", "severity": "warning"},
+            {"message": "fixture"},
+            {"message": "fixture", "level": "INFO", "severity": "ERROR"},
+        ])
+        error = self.history(search="fixture", level="error")
+        self.assertEqual({item["id"] for item in error["items"]}, set(ids[:2]))
+        for level in ("WARN", "WARNING"):
+            self.assertEqual(
+                {item["id"] for item in self.history(search="fixture", level=level)["items"]},
+                set(ids[2:4]),
+            )
+        info = self.history(search="fixture", level="INFO")
+        self.assertEqual({item["id"] for item in info["items"]}, set(ids[4:]))
+
+    def test_date_boundaries_offsets_and_combined_filters(self):
+        params = {
+            "service_id": str(self.service_ids[0]),
+            "environment_id": str(self.environment_ids[0]),
+            "level": "warning", "search": "record",
+            "start_time": self.now.isoformat(), "end_time": self.now.isoformat(),
+        }
+        data = self.history(**params)
+        self.assertEqual(data["total"], 1)
+        self.assertEqual(data["items"][0]["id"], str(UUID(int=5006)))
+        self.assertIsNotNone(datetime.fromisoformat(data["items"][0]["received_at"]).tzinfo)
+        offset_time = self.now.astimezone(timezone(timedelta(hours=5, minutes=30)))
+        self.assertEqual(self.history(**{**params, "start_time": offset_time.isoformat()})["total"], 1)
+        old_time = (self.now - timedelta(days=30)).isoformat()
+        old = self.history(**{**params, "start_time": old_time, "end_time": old_time}, page_size=100)
+        self.assertEqual(old["total"], 5005)
+        self.assertEqual(old["total_pages"], 51)
+        self.assertEqual(self.history(service_id=str(self.service_ids[0]), end_time=old_time)["total"], 5005)
+        self.assertEqual(self.history(service_id=str(self.service_ids[0]), start_time=(self.now + timedelta(days=1)).isoformat())["total"], 0)
+        self.assertEqual(self.history(**{**params, "service_id": str(self.service_ids[2])})["total"], 0)
+
+    def test_ascending_timestamp_sort_has_stable_disjoint_pages(self):
+        params = {"service_id": str(self.service_ids[0]), "sort": "asc", "page_size": 25}
+        first = self.history(**params, page=1)
+        second = self.history(**params, page=2)
+        self.assertEqual([item["id"] for item in first["items"]], [str(UUID(int=index)) for index in range(1, 26)])
+        self.assertEqual([item["id"] for item in second["items"]], [str(UUID(int=index)) for index in range(26, 51)])
+        last = self.history(**params, page=201)
+        self.assertEqual(last["items"][-1]["id"], str(UUID(int=5006)))
+
+    def test_invalid_history_filters_return_422(self):
+        for params in [
+            {"sort": "invalid"}, {"level": "invalid"}, {"search": "x" * 501},
+            {"start_time": "invalid"}, {"end_time": "2026-10-22T10:00:00"},
+            {"start_time": (self.now + timedelta(days=1)).isoformat(), "end_time": self.now.isoformat()},
+        ]:
+            with self.subTest(params=params):
+                self.assertEqual(self.client.get("/logs/history", params=params).status_code, 422)
 
 
 if __name__ == "__main__":

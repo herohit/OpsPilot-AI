@@ -1,7 +1,10 @@
 import asyncio
 import json
+from datetime import timezone
+from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import AwareDatetime
 from fastapi.responses import StreamingResponse
 from ops_pilot.models.auth_model import UserModel
 from ops_pilot.models.environment_model import Environment
@@ -34,11 +37,23 @@ def list_log_history(
     environment_id: UUID | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=100),
+    search: str | None = Query(default=None, max_length=500),
+    level: str | None = Query(default=None, pattern="(?i)^(debug|info|warn|warning|error|critical)$"),
+    start_time: AwareDatetime | None = None,
+    end_time: AwareDatetime | None = None,
+    sort: Literal["asc", "desc"] = "desc",
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
+    if start_time is not None:
+        start_time = start_time.astimezone(timezone.utc)
+    if end_time is not None:
+        end_time = end_time.astimezone(timezone.utc)
+    if start_time is not None and end_time is not None and start_time > end_time:
+        raise HTTPException(status_code=422, detail="Start time must not be after end time.")
     return log_service.list_log_history(
-        db, current_user.id, service_id, environment_id, page, page_size
+        db, current_user.id, service_id, environment_id, page, page_size,
+        search=search, level=level, start_time=start_time, end_time=end_time, sort=sort,
     )
 
 

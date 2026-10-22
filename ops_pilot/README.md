@@ -7,6 +7,17 @@ window or 5,000-record cutoff.
 Optional query parameters:
 
 - `service_id`, `environment_id`: UUID filters.
+- `search`: case-insensitive substring search across the stored JSON payload
+  (message, keys, and structured context); up to 500 characters. Whitespace-only
+  searches are ignored, and SQL wildcard characters are treated literally.
+- `level`: `DEBUG`, `INFO`, `WARN`, `WARNING`, `ERROR`, or `CRITICAL`
+  (case-insensitive). Uses payload `level`, then `severity`, defaulting to `INFO`;
+  `WARN` and `WARNING` match both spellings.
+- `start_time`, `end_time`: inclusive received-time bounds, as ISO 8601 timestamps
+  with a time zone, e.g. `2026-10-22T10:00:00Z`. Either bound can be omitted.
+  Dates are normalized to UTC; reversed ranges and timezone-less dates return 422.
+- `sort`: `desc` (default, newest first) or `asc` (oldest first), by received time,
+  then ID in the same direction for deterministic ordering.
 - `page`: 1-based page number (default `1`).
 - `page_size`: entries per page, `1` through `100` (default `50`).
 
@@ -15,6 +26,9 @@ Empty results have zero total pages; pages beyond the last page return empty
 items while retaining the total. Existing `/logs` and `/logs/stream` responses
 are unchanged. Pagination uses offsets; new or deleted records can shift page
 boundaries between requests.
+All history filters run in the database before counting and pagination, without
+the live snapshot's candidate cutoff. Timestamp filtering/sorting uses OpsPilot's
+received time, not the source's optional payload timestamp.
 
 ## Log source connection failures
 
